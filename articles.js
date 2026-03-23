@@ -1,4 +1,4 @@
-import { readdirSync } from 'fs';
+import { readdirSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -16,6 +16,10 @@ function parseDate(value) {
 
 function loadArticles() {
   const articlesDir = join(__dirname, 'articles');
+  if (!existsSync(articlesDir)) {
+    console.warn('articles/ directory not found — starting with no articles');
+    return [];
+  }
   const files = readdirSync(articlesDir).filter(
     f => f.endsWith('.js') && !f.startsWith('!')
   );
@@ -37,7 +41,12 @@ function loadArticles() {
     }
   }
 
-  articles.sort((a, b) => b.publishedAt - a.publishedAt);
+  articles.sort((a, b) => {
+    const orderA = a.metadata.order ?? 0;
+    const orderB = b.metadata.order ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return b.publishedAt - a.publishedAt;
+  });
   return articles;
 }
 
