@@ -1,4 +1,4 @@
-import { readdirSync } from 'fs';
+import { readdirSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -16,6 +16,10 @@ function parseDate(value) {
 
 function loadArticles() {
   const articlesDir = join(__dirname, 'articles');
+  if (!existsSync(articlesDir)) {
+    console.warn('articles/ directory not found — starting with no articles');
+    return [];
+  }
   const files = readdirSync(articlesDir).filter(
     f => f.endsWith('.js') && !f.startsWith('!')
   );

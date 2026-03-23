@@ -6,6 +6,12 @@ import { renderLayout as builtinLayout } from './templates/default/layout.js';
 import { getVisibleArticles, getArticleBySlug, getAllTags, reloadArticles } from './articles.js';
 import { initSync, startPolling, syncNow } from './git-sync.js';
 
+console.dir([
+  process.env.LAYOUT_PATH,
+  process.env.TEMPLATES_REPO_URL,
+  process.env.ARTICLES_REPO_URL,
+])
+
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, 'templates');
