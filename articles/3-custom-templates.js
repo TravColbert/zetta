@@ -5,6 +5,7 @@ module.exports = {
     publishedAt: '2025-01-03 00:00:00 +00:00',
     tags: ['zetta', 'documentation', 'templates'],
     blurb: 'Customize your blog appearance with templates and partials.',
+    order: 3
   },
   content: `
 Zetta uses a simple Mustache-style template system with \`{{placeholder}}\` substitution. You can override the default templates to fully customize your blog's appearance.

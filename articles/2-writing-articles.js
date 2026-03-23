@@ -5,6 +5,7 @@ module.exports = {
     publishedAt: '2025-01-02 00:00:00 +00:00',
     tags: ['zetta', 'documentation'],
     blurb: 'How to create and organize articles in Zetta.',
+    order: 2
   },
   content: `
 Each Zetta article is a \`.js\` file in the \`articles/\` directory that exports a \`metadata\` object and a \`content\` string.

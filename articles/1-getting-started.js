@@ -5,6 +5,7 @@ module.exports = {
     publishedAt: '2025-01-01 00:00:00 +00:00',
     tags: ['zetta', 'documentation'],
     blurb: 'Learn how to set up and run your Zetta blog engine.',
+    order: 1
   },
   content: `
 Zetta is a lightweight, file-based blog engine built on [Bun](https://bun.sh). It requires no database — articles are plain JavaScript files, and content syncs automatically from a Git repository.

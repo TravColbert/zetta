@@ -41,7 +41,12 @@ function loadArticles() {
     }
   }
 
-  articles.sort((a, b) => b.publishedAt - a.publishedAt);
+  articles.sort((a, b) => {
+    const orderA = a.metadata.order ?? 0;
+    const orderB = b.metadata.order ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return b.publishedAt - a.publishedAt;
+  });
   return articles;
 }
 
