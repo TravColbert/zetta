@@ -1,0 +1,11 @@
+{
+  "name": "zetta",
+  "module": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun run server.js"
+  },
+  "dependencies": {
+    "marked": "^15"
+  }
+}
