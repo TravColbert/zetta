@@ -27,6 +27,7 @@ The server starts on port 3000 by default: `http://localhost:3000`
 | `GET /images/:file` | Serves `articles/public/images/:file` |
 | `GET /css/:file` | Serves custom CSS (if `LAYOUT_PATH` set) with fallback to `articles/public/css/:file` |
 | `GET /favicon.ico` | Serves `articles/public/favicon.ico` |
+| `GET /robots.txt` | Serves `articles/public/robots.txt` |
 | `POST /webhook` | Triggers immediate git sync (requires `WEBHOOK_SECRET`) |
 
 ## Articles
@@ -56,23 +57,23 @@ module.exports = {
 The HTML wrapper is resolved at startup:
 
 1. **Custom layout** — set `LAYOUT_PATH` to the path of an HTML file. The file must contain `{{title}}`, `{{keywords}}`, and `{{body}}` placeholders.
-2. **Built-in fallback** — if `LAYOUT_PATH` is unset or the file doesn't exist, `templates/layout.js` is used.
+2. **Built-in fallback** — if `LAYOUT_PATH` is unset or the file doesn't exist, `templates/default/layout.js` is used.
 
-`templates/layout.html` is a reference copy of the built-in layout in HTML form — copy it somewhere outside the repo and point `LAYOUT_PATH` at it to customize.
+`templates/default/layout.html` is a reference copy of the built-in layout in HTML form — copy it somewhere outside the repo and point `LAYOUT_PATH` at it to customize.
 
 ### Custom 404 page
 
-Set `NOT_FOUND_PATH` to the path of any HTML file to replace the built-in 404 page. `templates/404.html` is the built-in page and serves as a starting point.
+Set `NOT_FOUND_PATH` to the path of any HTML file to replace the built-in 404 page. `templates/default/partials/404.html` is the built-in page and serves as a starting point.
 
 ### Custom 500 page
 
-Set `SERVER_ERROR_PATH` to the path of any HTML file to replace the built-in 500 page. `templates/500.html` is the built-in page and serves as a starting point.
+Set `SERVER_ERROR_PATH` to the path of any HTML file to replace the built-in 500 page. `templates/default/partials/500.html` is the built-in page and serves as a starting point.
 
 ### Partials
 
 Templates support `{{> name}}` partial inclusion. When a template contains `{{> head}}`, the server replaces it with the contents of `head.html` from the partials directory for that template:
 
-- **Built-in templates** (`layout.html`, `404.html`, `500.html`): partials are loaded from `templates/partials/`.
+- **Built-in templates** (`layout.html`, `404.html`, `500.html`): partials are loaded from `templates/default/partials/`.
 - **Custom templates** (set via env vars): layout partials are loaded from the **same directory as the custom template file**; content partials are loaded from a `partials/` subdirectory next to the layout file.
 
 Partials are resolved at startup — no runtime overhead. Partials themselves do not expand further `{{> ...}}` tags (single-level only). If a partial file is not found, a warning is logged and the tag resolves to an empty string.
@@ -103,6 +104,7 @@ The article and listing pages are assembled from partial files in `templates/par
 | `listing.html` | Listing page wrapper (tag-filtered view) | `{{tag_cloud}}`, `{{clear_filter}}`, `{{items}}` |
 | `listing-item.html` | Each row in the filtered listing | `{{slug}}`, `{{title}}`, `{{date}}`, `{{blurb}}` |
 | `listing-item-blurb.html` | Blurb paragraph (omitted when no blurb) | `{{blurb}}` |
+| `tag-cloud-item.html` | Each tag in the tag cloud on listing pages | `{{tag}}`, `{{url}}`, `{{active_class}}` |
 | `clear-filter.html` | "Clear filter" link (shown when tag filter is active) | _(none)_ |
 
 ## Environment Variables
@@ -155,24 +157,27 @@ zetta/
 │   └── public/
 │       ├── css/
 │       ├── images/
-│       └── favicon.ico
+│       ├── favicon.ico
+│       └── robots.txt
 ├── templates/
-│   ├── partials/
-│   │   ├── head.html              # Shared <head> fragment
-│   │   ├── article.html           # Article page structure
-│   │   ├── article-tag.html       # Tag link on article page
-│   │   ├── listing.html           # Listing page structure (tag-filtered view)
-│   │   ├── listing-item.html      # Listing row
-│   │   ├── listing-item-blurb.html # Blurb paragraph
-│   │   ├── tag-cloud-item.html    # Tag cloud link
-│   │   └── clear-filter.html      # Clear filter link
-│   │   # Additional partials loaded from custom dir when LAYOUT_PATH is set:
-│   │   # article-list.html, article-list-item.html, tag-list.html, tag-list-item.html
-│   ├── layout.js       # Built-in layout (JS)
-│   ├── layout.html     # Reference layout (HTML, for customization)
-│   ├── 404.html        # Built-in 404 page
-│   └── 500.html        # Built-in 500 page
+│   ├── default/                   # Built-in templates
+│   │   ├── partials/
+│   │   │   ├── head.html              # Shared <head> fragment
+│   │   │   ├── article.html           # Article page structure
+│   │   │   ├── article-tag.html       # Tag link on article page
+│   │   │   ├── listing.html           # Listing page structure (tag-filtered view)
+│   │   │   ├── listing-item.html      # Listing row
+│   │   │   ├── listing-item-blurb.html # Blurb paragraph
+│   │   │   ├── tag-cloud-item.html    # Tag cloud link
+│   │   │   ├── clear-filter.html      # Clear filter link
+│   │   │   ├── 404.html              # Built-in 404 page
+│   │   │   └── 500.html              # Built-in 500 page
+│   │   ├── layout.js             # Built-in layout (JS)
+│   │   └── layout.html           # Reference layout (HTML, for customization)
+│   └── custom/                    # Custom templates (git-synced or manual, gitignored)
 ├── articles.js         # Article loader
 ├── server.js           # HTTP server
+├── git-sync.js         # Git-based content syncing
+├── robots.txt          # Robots.txt (fallback)
 └── package.json
 ```
