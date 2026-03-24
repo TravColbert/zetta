@@ -1,0 +1,9 @@
+tests/
+*.test.js
+bunfig.toml
+.git
+.gitignore
+.dockerignore
+CLAUDE.md
+TODO.md
+README.md

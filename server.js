@@ -392,3 +392,5 @@ if (process.env.ARTICLES_REPO_URL || process.env.TEMPLATES_REPO_URL) {
     startPolling(handleSyncComplete);
   });
 }
+
+export { server, reloadArticles };
