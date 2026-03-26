@@ -1,6 +1,7 @@
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync, cpSync, rmSync } from 'fs';
+import { log } from './logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -63,7 +64,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
     const shaBefore = await getHeadSha(targetDir);
     const result = await runGit(['pull', '--ff-only'], targetDir);
     if (result.exitCode !== 0) {
-      console.error(`git pull failed for ${redactUrl(repoUrl)}:`, result.stderr);
+      log.error('git pull failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
       return { changed: false };
     }
     const shaAfter = await getHeadSha(targetDir);
@@ -80,7 +81,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
       __dirname
     );
     if (result.exitCode !== 0) {
-      console.error(`git clone failed for ${redactUrl(repoUrl)}:`, result.stderr);
+      log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
       rmSync(tempDir, { recursive: true, force: true });
       return { changed: false };
     }
@@ -89,7 +90,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
       cpSync(tempDir, targetDir, { recursive: true });
       rmSync(tempDir, { recursive: true, force: true });
     } catch (err) {
-      console.error(`Failed to swap directories for ${redactUrl(repoUrl)}:`, err.message);
+      log.error('directory swap failed', { repo: redactUrl(repoUrl), error: err.message });
       rmSync(tempDir, { recursive: true, force: true });
       return { changed: false };
     }
@@ -103,7 +104,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
     __dirname
   );
   if (result.exitCode !== 0) {
-    console.error(`git clone failed for ${redactUrl(repoUrl)}:`, result.stderr);
+    log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
     return { changed: false };
   }
   return { changed: true };
@@ -128,22 +129,22 @@ async function doSync() {
 
 export async function initSync(onComplete) {
   if (!ARTICLES_REPO_URL && !TEMPLATES_REPO_URL) return;
-  console.log('Starting initial git sync...');
-  if (ARTICLES_REPO_URL) console.log(`  Articles repo: ${redactUrl(ARTICLES_REPO_URL)} (${ARTICLES_REPO_BRANCH})`);
-  if (TEMPLATES_REPO_URL) console.log(`  Templates repo: ${redactUrl(TEMPLATES_REPO_URL)} (${TEMPLATES_REPO_BRANCH})`);
+  log.info('starting git sync');
+  if (ARTICLES_REPO_URL) log.info('sync target', { type: 'articles', repo: redactUrl(ARTICLES_REPO_URL), branch: ARTICLES_REPO_BRANCH });
+  if (TEMPLATES_REPO_URL) log.info('sync target', { type: 'templates', repo: redactUrl(TEMPLATES_REPO_URL), branch: TEMPLATES_REPO_BRANCH });
 
   try {
     const result = await doSync();
     onComplete(result);
   } catch (err) {
-    console.error('Initial sync failed:', err.message);
+    log.error('initial sync failed', { error: err.message });
   }
 }
 
 export function startPolling(onComplete) {
   if (!ARTICLES_REPO_URL && !TEMPLATES_REPO_URL) return;
   if (pollTimer) return;
-  console.log(`Git sync polling every ${SYNC_INTERVAL}s`);
+  log.info('git sync polling started', { interval_s: SYNC_INTERVAL });
   pollTimer = setInterval(async () => {
     try {
       const result = await doSync();
@@ -151,7 +152,7 @@ export function startPolling(onComplete) {
         onComplete(result);
       }
     } catch (err) {
-      console.error('Sync poll failed:', err.message);
+      log.error('sync poll failed', { error: err.message });
     }
   }, SYNC_INTERVAL * 1000);
 }
@@ -169,7 +170,7 @@ export async function syncNow(onComplete) {
     onComplete(result);
     return result;
   } catch (err) {
-    console.error('Manual sync failed:', err.message);
+    log.error('manual sync failed', { error: err.message });
     return { articlesChanged: false, templatesChanged: false };
   }
 }

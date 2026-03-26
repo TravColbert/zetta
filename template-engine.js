@@ -1,5 +1,6 @@
 import { join, dirname } from 'path';
 import { readFileSync, existsSync } from 'fs';
+import { log } from './logger.js';
 import { renderLayout as builtinLayout } from './templates/default/layout.js';
 import { BUILTIN_PARTIALS_DIR, getCustomDirs } from './config.js';
 
@@ -7,7 +8,7 @@ function resolvePartials(template, partialsDir) {
   return template.replace(/\{\{>\s*(\w+)\s*\}\}/g, (_, name) => {
     const partialPath = join(partialsDir, `${name}.html`);
     if (existsSync(partialPath)) return readFileSync(partialPath, 'utf8');
-    console.warn(`Partial not found: ${partialPath}`);
+    log.warn('partial not found', { path: partialPath });
     return '';
   });
 }
@@ -17,8 +18,8 @@ function loadLayout(customCssDir) {
   if (customPath && existsSync(customPath)) {
     const raw = readFileSync(customPath, 'utf8');
     const template = resolvePartials(raw, dirname(customPath));
-    console.log(`Using custom layout: ${customPath}`);
-    if (customCssDir) console.log(`Custom CSS directory: ${customCssDir}`);
+    log.info('using custom layout', { path: customPath });
+    if (customCssDir) log.info('custom CSS directory', { path: customCssDir });
     return ({ slug, title, keywords, description, body }) =>
       template
         .replace(/\{\{slug\}\}/g, slug ?? '')
@@ -33,7 +34,7 @@ function loadLayout(customCssDir) {
 function load404() {
   const customPath = process.env.NOT_FOUND_PATH;
   if (customPath && existsSync(customPath)) {
-    console.log(`Using custom 404 page: ${customPath}`);
+    log.info('using custom 404 page', { path: customPath });
     const raw = readFileSync(customPath, 'utf8');
     return resolvePartials(raw, dirname(customPath));
   }
@@ -43,7 +44,7 @@ function load404() {
 function load500() {
   const customPath = process.env.SERVER_ERROR_PATH;
   if (customPath && existsSync(customPath)) {
-    console.log(`Using custom 500 page: ${customPath}`);
+    log.info('using custom 500 page', { path: customPath });
     const raw = readFileSync(customPath, 'utf8');
     return resolvePartials(raw, dirname(customPath));
   }
@@ -58,7 +59,7 @@ function loadContentPartial(name, customPartialsDir) {
   }
   const builtin = join(BUILTIN_PARTIALS_DIR, filename);
   if (existsSync(builtin)) return readFileSync(builtin, 'utf8');
-  console.warn(`Content partial not found: ${name}`);
+  log.warn('content partial not found', { name });
   return '';
 }
 
@@ -98,7 +99,7 @@ export function getTemplates() {
 
 export function reloadTemplates() {
   loadAllTemplates();
-  console.log('Templates reloaded');
+  log.info('templates reloaded');
 }
 
 export function respond404() {
