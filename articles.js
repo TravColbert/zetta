@@ -2,6 +2,7 @@ import { readdirSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { log } from './logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -17,7 +18,7 @@ function parseDate(value) {
 function loadArticles() {
   const articlesDir = join(__dirname, 'articles');
   if (!existsSync(articlesDir)) {
-    console.warn('articles/ directory not found — starting with no articles');
+    log.warn('articles directory not found');
     return [];
   }
   const files = readdirSync(articlesDir).filter(
@@ -37,7 +38,7 @@ function loadArticles() {
       const slug = file.replace(/\.js$/, '');
       articles.push({ slug, metadata, content, publishedAt });
     } catch (err) {
-      console.error(`Failed to load article ${file}:`, err.message);
+      log.error('failed to load article', { file, error: err.message });
     }
   }
 
@@ -73,7 +74,7 @@ export function reloadArticles() {
     }
   }
   articles = loadArticles();
-  console.log(`Reloaded ${articles.length} articles`);
+  log.info('articles reloaded', { count: articles.length });
 }
 
 export function getAllTags() {

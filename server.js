@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { log, withAccessLog } from './logger.js';
 import { PORT, ROOT_DIR, TEMPLATES_CUSTOM_DIR, getCustomDirs } from './config.js';
 import { getTemplates, reloadTemplates, respond404, respond500 } from './template-engine.js';
 import { renderArticlePage, renderArticleList, renderTagListing } from './renderers.js';
@@ -9,7 +10,7 @@ import { initSync, startPolling, syncNow } from './git-sync.js';
 
 const server = Bun.serve({
   port: PORT,
-  async fetch(req) {
+  fetch: withAccessLog(async function (req) {
     try {
       const url = new URL(req.url);
       const { pathname } = url;
@@ -108,20 +109,20 @@ const server = Bun.serve({
 
       return respond404();
     } catch (err) {
-      console.error('Server error:', err);
+      log.error('unhandled server error', { error: err.message, stack: err.stack });
       return respond500();
     }
-  },
+  }),
 });
 
-console.log(`Zetta running at http://localhost:${server.port}`);
+log.info('server started', { port: server.port });
 
 function handleSyncComplete({ articlesChanged, templatesChanged }) {
   if (templatesChanged && !process.env.LAYOUT_PATH && process.env.TEMPLATES_REPO_URL) {
     const customLayout = join(TEMPLATES_CUSTOM_DIR, 'layout.html');
     if (existsSync(customLayout)) {
       process.env.LAYOUT_PATH = customLayout;
-      console.log(`Auto-set LAYOUT_PATH to ${customLayout}`);
+      log.info('auto-set LAYOUT_PATH', { path: customLayout });
     }
   }
   if (articlesChanged) reloadArticles();
