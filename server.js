@@ -6,12 +6,6 @@ import { renderLayout as builtinLayout } from './templates/default/layout.js';
 import { getVisibleArticles, getArticleBySlug, getAllTags, reloadArticles } from './articles.js';
 import { initSync, startPolling, syncNow } from './git-sync.js';
 
-console.dir([
-  process.env.LAYOUT_PATH,
-  process.env.TEMPLATES_REPO_URL,
-  process.env.ARTICLES_REPO_URL,
-])
-
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, 'templates');
@@ -230,39 +224,6 @@ function renderTagListing() {
 
   const body = tagListTmpl
     .replace('{{items}}', tagList);
-
-  return renderLayout({ title: 'Articles', keywords: allTags.join(', '), body });
-}
-
-function renderListingPage(articles, activeTag) {
-  const allTags = getAllTags();
-
-  const tagCloud = allTags
-    .map(t => tagCloudItemTmpl
-      .replace('{{tag}}', t)
-      .replace('{{url}}', encodeURIComponent(t))
-      .replace('{{active_class}}', t === activeTag ? 'active' : ''))
-    .join(' ');
-
-  const clearFilter = activeTag ? clearFilterTmpl : '';
-
-  const items = articles
-    .map(({ metadata, publishedAt, slug }) => {
-      const blurb = metadata.blurb
-        ? listingItemBlurbTmpl.replace('{{blurb}}', metadata.blurb)
-        : '';
-      return listingItemTmpl
-        .replace('{{slug}}', slug)
-        .replace('{{title}}', metadata.title)
-        .replace('{{date}}', formatDate(publishedAt))
-        .replace('{{blurb}}', blurb);
-    })
-    .join('\n');
-
-  const body = listingTmpl
-    .replace('{{tag_cloud}}', tagCloud)
-    .replace('{{clear_filter}}', clearFilter)
-    .replace('{{items}}', items);
 
   return renderLayout({ title: 'Articles', keywords: allTags.join(', '), body });
 }
