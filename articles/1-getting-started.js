@@ -1,11 +1,11 @@
 module.exports = {
   metadata: {
-    title: 'Getting Started with Zetta',
-    author: 'Zetta',
-    publishedAt: '2025-01-01 00:00:00 +00:00',
-    tags: ['zetta', 'documentation'],
-    blurb: 'Learn how to set up and run your Zetta blog engine.',
-    order: 1
+    title: "Getting Started with Zetta",
+    author: "Zetta",
+    publishedAt: "2025-01-01 00:00:00 +00:00",
+    tags: ["zetta", "documentation"],
+    blurb: "Learn how to set up and run your Zetta blog engine.",
+    order: 1,
   },
   content: `
 Zetta is a lightweight, file-based blog engine built on [Bun](https://bun.sh). It requires no database — articles are plain JavaScript files, and content syncs automatically from a Git repository.
@@ -50,6 +50,18 @@ docker run -p 8080:8080 \\
   -e GIT_TOKEN=your_token \\
   zetta
 \`\`\`
+
+## Default Routes
+
+The following routes are baked right into Zetta:
+
+| HTTP Method | Path | Result |
+|---|---|---|
+| GET | / (root) | Shows the latest article |
+| GET | /about   | Shows the article named \`about.js\` |
+| GET | /tags    | Shows a list of all tags for all public articles |
+| GET | /articles | Shows a list of all public articles |
+| POST | /webhook | Triggers a re-sync and reread of the document repository |
 
 ## What's Next?
 
