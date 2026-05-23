@@ -11,17 +11,17 @@ export function renderArticlePage(article, templates) {
 
   const tags = (metadata.tags ?? [])
     .map(t => articleTagTmpl
-      .replace('{{tag}}', t)
-      .replace('{{url}}', encodeURIComponent(t)))
+      .replaceAll('{{tag}}', t)
+      .replaceAll('{{url}}', encodeURIComponent(t)))
     .join(' ');
 
   const body = articleTmpl
-    .replace('{{title}}', metadata.title)
-    .replace('{{slug}}', slug)
-    .replace('{{author}}', metadata.author)
-    .replace('{{date}}', formatDate(publishedAt))
-    .replace('{{tags}}', tags)
-    .replace('{{content}}', marked(content));
+    .replaceAll('{{title}}', metadata.title)
+    .replaceAll('{{slug}}', slug)
+    .replaceAll('{{author}}', metadata.author)
+    .replaceAll('{{date}}', formatDate(publishedAt))
+    .replaceAll('{{tags}}', tags)
+    .replaceAll('{{content}}', marked(content));
 
   return renderLayout({
     slug,
@@ -49,10 +49,10 @@ export function renderArticleList(articles, templates) {
 
       return articleListItemTmpl
         .replaceAll('{{slug}}', slug)
-        .replace('{{title}}', metadata.title)
-        .replace('{{date}}', formatDate(publishedAt))
-        .replace('{{blurb}}', blurb)
-        .replace('{{tags}}', articleTagList);
+        .replaceAll('{{title}}', metadata.title)
+        .replaceAll('{{date}}', formatDate(publishedAt))
+        .replaceAll('{{blurb}}', blurb)
+        .replaceAll('{{tags}}', articleTagList);
     })
     .join('\n');
 
@@ -75,5 +75,5 @@ export function renderTagListing(templates) {
   const body = tagListTmpl
     .replace('{{items}}', tagList);
 
-  return renderLayout({ title: 'Articles', keywords: allTags.join(', '), body });
+  return renderLayout({ title: 'Tags', keywords: allTags.join(', '), body });
 }

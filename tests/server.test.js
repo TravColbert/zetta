@@ -128,6 +128,12 @@ describe('GET /tags', () => {
     expect(html).toContain('testing');
     expect(html).toContain('fixtures');
   });
+
+  test('page title is Tags not Articles', async () => {
+    const res = await fetch(`${BASE}/tags`);
+    const html = await res.text();
+    expect(html).toContain('<title>Tags — Zetta</title>');
+  });
 });
 
 describe('GET /articles', () => {

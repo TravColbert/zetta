@@ -8,6 +8,8 @@ import { serveFile } from './static-files.js';
 import { getVisibleArticles, getArticleBySlug, reloadArticles } from './articles.js';
 import { initSync, startPolling, syncNow } from './git-sync.js';
 
+const HTML_HEADERS = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
+
 const server = Bun.serve({
   port: PORT,
   fetch: withAccessLog(async function (req) {
@@ -27,14 +29,14 @@ const server = Bun.serve({
         const about = getArticleBySlug('about');
         if (about) {
           const html = renderArticlePage(about, getTemplates());
-          return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+          return new Response(html, HTML_HEADERS);
         }
       }
 
       // GET /tags
       if (pathname === '/tags') {
         const html = renderTagListing(getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /articles
@@ -45,7 +47,7 @@ const server = Bun.serve({
           articles = articles.filter(a => (a.metadata.tags ?? []).includes(tag));
         }
         const html = renderArticleList(articles, getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /articles/:slug
@@ -55,7 +57,7 @@ const server = Bun.serve({
         const article = getArticleBySlug(slug);
         if (!article) return respond404();
         const html = renderArticlePage(article, getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /images/:file
