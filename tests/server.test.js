@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll, mock } from 'bun:test';
-import { cpSync, rmSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { cpSync, rmSync, existsSync, mkdirSync, readdirSync, symlinkSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -278,5 +278,56 @@ describe('unknown routes', () => {
   test('returns 404 for unknown paths', async () => {
     const res = await fetch(`${BASE}/nonexistent/path`);
     expect(res.status).toBe(404);
+  });
+});
+
+describe('XSS: article metadata escaping', () => {
+  test('HTML special chars in title/author/tags are escaped in article page', async () => {
+    loadFixtures(['xss-metadata.js']);
+    reloadArticles();
+    try {
+      const res = await fetch(`${BASE}/articles/xss-metadata`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).not.toContain('<script>alert(1)</script>');
+      expect(html).not.toContain('<img src=x onerror=alert(1)>');
+      expect(html).not.toContain('<b>tag</b>');
+      expect(html).not.toContain('<em>blurb</em>');
+      expect(html).toContain('&lt;script&gt;');
+    } finally {
+      loadFixtures(['valid-article.js', 'hidden-article.js', 'tagless-article.js', 'about.js']);
+      reloadArticles();
+    }
+  });
+});
+
+describe('XSS: marked content escaping', () => {
+  test('raw HTML script tags in article content are escaped', async () => {
+    loadFixtures(['xss-content.js']);
+    reloadArticles();
+    try {
+      const res = await fetch(`${BASE}/articles/xss-content`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      const main = html.split('<main>')[1].split('</main>')[0];
+      expect(main).not.toContain('<script>alert("xss")</script>');
+      expect(main).toContain('&lt;script&gt;');
+    } finally {
+      loadFixtures(['valid-article.js', 'hidden-article.js', 'tagless-article.js', 'about.js']);
+      reloadArticles();
+    }
+  });
+});
+
+describe('path traversal: symlink protection', () => {
+  test('does not serve a file outside images dir via symlink', async () => {
+    const symlinkPath = join(ARTICLES_DIR, 'public/images/escape.png');
+    symlinkSync('/etc/hostname', symlinkPath);
+    try {
+      const res = await fetch(`${BASE}/images/escape.png`);
+      expect(res.status).toBe(404);
+    } finally {
+      unlinkSync(symlinkPath);
+    }
   });
 });

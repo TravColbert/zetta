@@ -1,5 +1,14 @@
 import { marked } from 'marked';
 import { getAllTags } from './articles.js';
+import { escapeHtml } from './utils.js';
+
+marked.use({
+  renderer: {
+    html({ text }) {
+      return escapeHtml(text);
+    },
+  },
+});
 
 function formatDate(date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -11,14 +20,14 @@ export function renderArticlePage(article, templates) {
 
   const tags = (metadata.tags ?? [])
     .map(t => articleTagTmpl
-      .replaceAll('{{tag}}', t)
+      .replaceAll('{{tag}}', escapeHtml(t))
       .replaceAll('{{url}}', encodeURIComponent(t)))
     .join(' ');
 
   const body = articleTmpl
-    .replaceAll('{{title}}', metadata.title)
-    .replaceAll('{{slug}}', slug)
-    .replaceAll('{{author}}', metadata.author)
+    .replaceAll('{{title}}', escapeHtml(metadata.title))
+    .replaceAll('{{slug}}', escapeHtml(slug))
+    .replaceAll('{{author}}', escapeHtml(metadata.author))
     .replaceAll('{{date}}', formatDate(publishedAt))
     .replaceAll('{{tags}}', tags)
     .replaceAll('{{content}}', marked(content));
@@ -38,18 +47,18 @@ export function renderArticleList(articles, templates) {
   const items = articles
     .map(({ metadata, publishedAt, slug }) => {
       const blurb = metadata.blurb
-        ? listingItemBlurbTmpl.replace('{{blurb}}', metadata.blurb)
+        ? listingItemBlurbTmpl.replace('{{blurb}}', escapeHtml(metadata.blurb))
         : '';
 
       const articleTagList = (metadata.tags ?? [])
         .map(t => tagListItemTmpl
-          .replaceAll('{{tag}}', t)
+          .replaceAll('{{tag}}', escapeHtml(t))
           .replaceAll('{{url}}', encodeURIComponent(t)))
         .join(' ');
 
       return articleListItemTmpl
-        .replaceAll('{{slug}}', slug)
-        .replaceAll('{{title}}', metadata.title)
+        .replaceAll('{{slug}}', escapeHtml(slug))
+        .replaceAll('{{title}}', escapeHtml(metadata.title))
         .replaceAll('{{date}}', formatDate(publishedAt))
         .replaceAll('{{blurb}}', blurb)
         .replaceAll('{{tags}}', articleTagList);
@@ -68,7 +77,7 @@ export function renderTagListing(templates) {
 
   const tagList = allTags
     .map(t => tagListItemTmpl
-      .replaceAll('{{tag}}', t)
+      .replaceAll('{{tag}}', escapeHtml(t))
       .replaceAll('{{url}}', encodeURIComponent(t)))
     .join(' ');
 
