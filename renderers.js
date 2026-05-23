@@ -16,16 +16,16 @@ export function renderArticlePage(article, templates) {
     .join(' ');
 
   const body = articleTmpl
-    .replaceAll('{{title}}', escapeHtml(metadata.title))
+    .replaceAll('{{title}}', escapeHtml(metadata.title ?? 'TITLE NOT SET'))
     .replaceAll('{{slug}}', escapeHtml(slug))
-    .replaceAll('{{author}}', escapeHtml(metadata.author))
+    .replaceAll('{{author}}', escapeHtml(metadata.author ?? 'AUTHOR NOT SET'))
     .replaceAll('{{date}}', formatDate(publishedAt))
     .replaceAll('{{tags}}', tags)
     .replaceAll('{{content}}', renderedContent);
 
   return renderLayout({
     slug,
-    title: metadata.title,
+    title: metadata.title ?? 'TITLE NOT SET',
     keywords: (metadata.tags ?? []).join(', '),
     description: metadata.blurb ?? '',
     body,
@@ -49,7 +49,7 @@ export function renderArticleList(articles, templates) {
 
       return articleListItemTmpl
         .replaceAll('{{slug}}', escapeHtml(slug))
-        .replaceAll('{{title}}', escapeHtml(metadata.title))
+        .replaceAll('{{title}}', escapeHtml(metadata.title ?? 'TITLE NOT SET'))
         .replaceAll('{{date}}', formatDate(publishedAt))
         .replaceAll('{{blurb}}', blurb)
         .replaceAll('{{tags}}', articleTagList);

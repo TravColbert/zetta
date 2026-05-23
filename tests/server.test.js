@@ -319,6 +319,23 @@ describe('XSS: marked content escaping', () => {
   });
 });
 
+describe('missing metadata fallbacks', () => {
+  test('renders TITLE NOT SET and AUTHOR NOT SET when fields are absent', async () => {
+    loadFixtures(['no-title-author.js']);
+    reloadArticles();
+    try {
+      const res = await fetch(`${BASE}/articles/no-title-author`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('TITLE NOT SET');
+      expect(html).toContain('AUTHOR NOT SET');
+    } finally {
+      loadFixtures(['valid-article.js', 'hidden-article.js', 'tagless-article.js', 'about.js']);
+      reloadArticles();
+    }
+  });
+});
+
 describe('path traversal: symlink protection', () => {
   test('does not serve a file outside images dir via symlink', async () => {
     const symlinkPath = join(ARTICLES_DIR, 'public/images/escape.png');

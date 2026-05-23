@@ -12,7 +12,7 @@ export function renderLayout({ slug, title, keywords, description, body }) {
   const articleLinks = articles
     .map((a) => {
       const active = a.slug === slug ? ' class="active"' : "";
-      return `      <li><a href="/articles/${a.slug}"${active}>${escapeHtml(a.metadata.title)}</a></li>`;
+      return `      <li><a href="/articles/${a.slug}"${active}>${escapeHtml(a.metadata.title ?? 'TITLE NOT SET')}</a></li>`;
     })
     .join("\n");
 
