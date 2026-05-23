@@ -1,21 +1,12 @@
-import { marked } from 'marked';
 import { getAllTags } from './articles.js';
 import { escapeHtml } from './utils.js';
-
-marked.use({
-  renderer: {
-    html({ text }) {
-      return escapeHtml(text);
-    },
-  },
-});
 
 function formatDate(date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export function renderArticlePage(article, templates) {
-  const { slug, metadata, content, publishedAt } = article;
+  const { slug, metadata, renderedContent, publishedAt } = article;
   const { articleTagTmpl, articleTmpl, renderLayout } = templates;
 
   const tags = (metadata.tags ?? [])
@@ -30,7 +21,7 @@ export function renderArticlePage(article, templates) {
     .replaceAll('{{author}}', escapeHtml(metadata.author))
     .replaceAll('{{date}}', formatDate(publishedAt))
     .replaceAll('{{tags}}', tags)
-    .replaceAll('{{content}}', marked(content));
+    .replaceAll('{{content}}', renderedContent);
 
   return renderLayout({
     slug,
