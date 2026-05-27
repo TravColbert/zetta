@@ -3,6 +3,7 @@ import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { log } from './logger.js';
+import { renderMarkdown } from './utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -36,7 +37,7 @@ function loadArticles() {
       if (!publishedAt) continue;
 
       const slug = file.replace(/\.js$/, '');
-      articles.push({ slug, metadata, content, publishedAt });
+      articles.push({ slug, metadata, content, publishedAt, renderedContent: renderMarkdown(content) });
     } catch (err) {
       log.error('failed to load article', { file, error: err.message });
     }

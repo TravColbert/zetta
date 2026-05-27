@@ -227,3 +227,32 @@ describe('reloadArticles', () => {
     expect(mod.getAllArticles().length).toBe(1);
   });
 });
+
+describe('renderedContent', () => {
+  test('is pre-rendered as HTML at load time', () => {
+    loadFixtures(['valid-article.js']);
+    mod.reloadArticles();
+    const article = mod.getAllArticles()[0];
+    expect(article.renderedContent).toBeDefined();
+    expect(article.renderedContent).toContain('<h1>Hello</h1>');
+    expect(article.renderedContent).toContain('This is test content.');
+  });
+
+  test('is refreshed after reloadArticles', () => {
+    loadFixtures(['valid-article.js']);
+    mod.reloadArticles();
+    const first = mod.getAllArticles()[0].renderedContent;
+    mod.reloadArticles();
+    const second = mod.getAllArticles()[0].renderedContent;
+    expect(second).toEqual(first);
+    expect(second).toContain('<h1>Hello</h1>');
+  });
+
+  test('raw HTML in content is escaped', () => {
+    loadFixtures(['xss-content.js']);
+    mod.reloadArticles();
+    const article = mod.getAllArticles()[0];
+    expect(article.renderedContent).not.toContain('<script>');
+    expect(article.renderedContent).toContain('&lt;script&gt;');
+  });
+});

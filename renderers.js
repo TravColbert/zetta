@@ -1,31 +1,31 @@
-import { marked } from 'marked';
 import { getAllTags } from './articles.js';
+import { escapeHtml } from './utils.js';
 
 function formatDate(date) {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export function renderArticlePage(article, templates) {
-  const { slug, metadata, content, publishedAt } = article;
+  const { slug, metadata, renderedContent, publishedAt } = article;
   const { articleTagTmpl, articleTmpl, renderLayout } = templates;
 
   const tags = (metadata.tags ?? [])
     .map(t => articleTagTmpl
-      .replace('{{tag}}', t)
-      .replace('{{url}}', encodeURIComponent(t)))
+      .replaceAll('{{tag}}', escapeHtml(t))
+      .replaceAll('{{url}}', encodeURIComponent(t)))
     .join(' ');
 
   const body = articleTmpl
-    .replace('{{title}}', metadata.title)
-    .replace('{{slug}}', slug)
-    .replace('{{author}}', metadata.author)
-    .replace('{{date}}', formatDate(publishedAt))
-    .replace('{{tags}}', tags)
-    .replace('{{content}}', marked(content));
+    .replaceAll('{{title}}', escapeHtml(metadata.title ?? 'TITLE NOT SET'))
+    .replaceAll('{{slug}}', escapeHtml(slug))
+    .replaceAll('{{author}}', escapeHtml(metadata.author ?? 'AUTHOR NOT SET'))
+    .replaceAll('{{date}}', formatDate(publishedAt))
+    .replaceAll('{{tags}}', tags)
+    .replaceAll('{{content}}', renderedContent);
 
   return renderLayout({
     slug,
-    title: metadata.title,
+    title: metadata.title ?? 'TITLE NOT SET',
     keywords: (metadata.tags ?? []).join(', '),
     description: metadata.blurb ?? '',
     body,
@@ -38,21 +38,21 @@ export function renderArticleList(articles, templates) {
   const items = articles
     .map(({ metadata, publishedAt, slug }) => {
       const blurb = metadata.blurb
-        ? listingItemBlurbTmpl.replace('{{blurb}}', metadata.blurb)
+        ? listingItemBlurbTmpl.replace('{{blurb}}', escapeHtml(metadata.blurb))
         : '';
 
       const articleTagList = (metadata.tags ?? [])
         .map(t => tagListItemTmpl
-          .replaceAll('{{tag}}', t)
+          .replaceAll('{{tag}}', escapeHtml(t))
           .replaceAll('{{url}}', encodeURIComponent(t)))
         .join(' ');
 
       return articleListItemTmpl
-        .replaceAll('{{slug}}', slug)
-        .replace('{{title}}', metadata.title)
-        .replace('{{date}}', formatDate(publishedAt))
-        .replace('{{blurb}}', blurb)
-        .replace('{{tags}}', articleTagList);
+        .replaceAll('{{slug}}', escapeHtml(slug))
+        .replaceAll('{{title}}', escapeHtml(metadata.title ?? 'TITLE NOT SET'))
+        .replaceAll('{{date}}', formatDate(publishedAt))
+        .replaceAll('{{blurb}}', blurb)
+        .replaceAll('{{tags}}', articleTagList);
     })
     .join('\n');
 
@@ -68,12 +68,12 @@ export function renderTagListing(templates) {
 
   const tagList = allTags
     .map(t => tagListItemTmpl
-      .replaceAll('{{tag}}', t)
+      .replaceAll('{{tag}}', escapeHtml(t))
       .replaceAll('{{url}}', encodeURIComponent(t)))
     .join(' ');
 
   const body = tagListTmpl
     .replace('{{items}}', tagList);
 
-  return renderLayout({ title: 'Articles', keywords: allTags.join(', '), body });
+  return renderLayout({ title: 'Tags', keywords: allTags.join(', '), body });
 }

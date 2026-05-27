@@ -1,8 +1,9 @@
 import { getVisibleArticles, getAllTags } from "../../articles.js";
+import { escapeHtml } from "../../utils.js";
 
 export function renderLayout({ slug, title, keywords, description, body }) {
   const descTag = description
-    ? `\n  <meta name="description" content="${description}">`
+    ? `\n  <meta name="description" content="${escapeHtml(description)}">`
     : "";
 
   const articles = getVisibleArticles();
@@ -11,14 +12,14 @@ export function renderLayout({ slug, title, keywords, description, body }) {
   const articleLinks = articles
     .map((a) => {
       const active = a.slug === slug ? ' class="active"' : "";
-      return `      <li><a href="/articles/${a.slug}"${active}>${a.metadata.title}</a></li>`;
+      return `      <li><a href="/articles/${a.slug}"${active}>${escapeHtml(a.metadata.title ?? 'TITLE NOT SET')}</a></li>`;
     })
     .join("\n");
 
   const tagLinks = tags
     .map(
       (t) =>
-        `      <a href="/articles?tag=${encodeURIComponent(t)}" class="tag">${t}</a>`,
+        `      <a href="/articles?tag=${encodeURIComponent(t)}" class="tag">${escapeHtml(t)}</a>`,
     )
     .join("\n");
 
@@ -27,8 +28,8 @@ export function renderLayout({ slug, title, keywords, description, body }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="keywords" content="${keywords ?? ""}">${descTag}
-  <title>${title} — Zetta</title>
+  <meta name="keywords" content="${escapeHtml(keywords)}">${descTag}
+  <title>${escapeHtml(title)} — Zetta</title>
   <link rel="stylesheet" href="/css/zetta.css">
   <link rel="icon" href="/favicon.ico">
 </head>

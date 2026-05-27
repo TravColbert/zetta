@@ -1,3 +1,6 @@
+import { realpath } from 'fs/promises';
+import { sep } from 'path';
+
 const MIME_TYPES = {
   '.css': 'text/css',
   '.js': 'application/javascript',
@@ -20,4 +23,14 @@ export async function serveFile(filePath, respond404) {
   const exists = await file.exists();
   if (!exists) return respond404();
   return new Response(file, { headers: { 'Content-Type': mimeFor(filePath) } });
+}
+
+export async function serveFileInDir(filePath, baseDir, respond404) {
+  try {
+    const resolved = await realpath(filePath);
+    if (!resolved.startsWith(baseDir + sep)) return respond404();
+  } catch {
+    return respond404();
+  }
+  return new Response(Bun.file(filePath), { headers: { 'Content-Type': mimeFor(filePath) } });
 }

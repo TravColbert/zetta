@@ -1,12 +1,25 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { timingSafeEqual } from 'crypto';
 import { log, withAccessLog } from './logger.js';
 import { PORT, ROOT_DIR, TEMPLATES_CUSTOM_DIR, getCustomDirs } from './config.js';
 import { getTemplates, reloadTemplates, respond404, respond500 } from './template-engine.js';
 import { renderArticlePage, renderArticleList, renderTagListing } from './renderers.js';
-import { serveFile } from './static-files.js';
+import { serveFile, serveFileInDir } from './static-files.js';
 import { getVisibleArticles, getArticleBySlug, reloadArticles } from './articles.js';
 import { initSync, startPolling, syncNow } from './git-sync.js';
+
+const HTML_HEADERS = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
+
+function secureCompare(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) {
+    timingSafeEqual(bufA, bufA); // keep execution path uniform
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
 
 const server = Bun.serve({
   port: PORT,
@@ -27,14 +40,14 @@ const server = Bun.serve({
         const about = getArticleBySlug('about');
         if (about) {
           const html = renderArticlePage(about, getTemplates());
-          return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+          return new Response(html, HTML_HEADERS);
         }
       }
 
       // GET /tags
       if (pathname === '/tags') {
         const html = renderTagListing(getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /articles
@@ -45,7 +58,7 @@ const server = Bun.serve({
           articles = articles.filter(a => (a.metadata.tags ?? []).includes(tag));
         }
         const html = renderArticleList(articles, getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /articles/:slug
@@ -55,13 +68,14 @@ const server = Bun.serve({
         const article = getArticleBySlug(slug);
         if (!article) return respond404();
         const html = renderArticlePage(article, getTemplates());
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        return new Response(html, HTML_HEADERS);
       }
 
       // GET /images/:file
       const imageMatch = pathname.match(/^\/images\/(.+)$/);
       if (imageMatch) {
-        return serveFile(join(ROOT_DIR, 'articles/public/images', imageMatch[1]), respond404);
+        const imagesDir = join(ROOT_DIR, 'articles/public/images');
+        return serveFileInDir(join(imagesDir, imageMatch[1]), imagesDir, respond404);
       }
 
       // GET /css/:file
@@ -69,10 +83,11 @@ const server = Bun.serve({
       if (cssMatch) {
         const { CUSTOM_CSS_DIR } = getCustomDirs();
         if (CUSTOM_CSS_DIR) {
-          const customResponse = await serveFile(join(CUSTOM_CSS_DIR, cssMatch[1]), respond404);
+          const customResponse = await serveFileInDir(join(CUSTOM_CSS_DIR, cssMatch[1]), CUSTOM_CSS_DIR, respond404);
           if (customResponse.status !== 404) return customResponse;
         }
-        return serveFile(join(ROOT_DIR, 'articles/public/css', cssMatch[1]), respond404);
+        const cssDir = join(ROOT_DIR, 'articles/public/css');
+        return serveFileInDir(join(cssDir, cssMatch[1]), cssDir, respond404);
       }
 
       // GET /favicon.ico
@@ -94,7 +109,7 @@ const server = Bun.serve({
             headers: { 'Content-Type': 'application/json' },
           });
         }
-        if (req.headers.get('x-webhook-secret') !== webhookSecret) {
+        if (!secureCompare(req.headers.get('x-webhook-secret') ?? '', webhookSecret)) {
           return new Response(JSON.stringify({ error: 'unauthorized' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' },

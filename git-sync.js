@@ -64,7 +64,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
     const shaBefore = await getHeadSha(targetDir);
     const result = await runGit(['pull', '--ff-only'], targetDir);
     if (result.exitCode !== 0) {
-      log.error('git pull failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
+      log.error('git pull failed', { repo: redactUrl(repoUrl), stderr: redactUrl(result.stderr) });
       return { changed: false };
     }
     const shaAfter = await getHeadSha(targetDir);
@@ -81,7 +81,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
       __dirname
     );
     if (result.exitCode !== 0) {
-      log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
+      log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: redactUrl(result.stderr) });
       rmSync(tempDir, { recursive: true, force: true });
       return { changed: false };
     }
@@ -104,7 +104,7 @@ async function cloneOrPull(repoUrl, branch, targetDir) {
     __dirname
   );
   if (result.exitCode !== 0) {
-    log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: result.stderr });
+    log.error('git clone failed', { repo: redactUrl(repoUrl), stderr: redactUrl(result.stderr) });
     return { changed: false };
   }
   return { changed: true };
