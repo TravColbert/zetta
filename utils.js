@@ -8,14 +8,6 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-marked.use({
-  renderer: {
-    html({ text }) {
-      return escapeHtml(text);
-    },
-  },
-});
-
 export function renderMarkdown(content) {
   return marked(content ?? '');
 }
