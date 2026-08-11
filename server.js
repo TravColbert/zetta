@@ -1,13 +1,13 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { timingSafeEqual } from 'crypto';
-import { log, withAccessLog } from './logger.js';
-import { PORT, ROOT_DIR, TEMPLATES_CUSTOM_DIR, getCustomDirs } from './config.js';
-import { getTemplates, reloadTemplates, respond404, respond500 } from './template-engine.js';
-import { renderArticlePage, renderArticleList, renderTagListing } from './renderers.js';
-import { serveFile, serveFileInDir } from './static-files.js';
-import { getVisibleArticles, getArticleBySlug, reloadArticles } from './articles.js';
-import { initSync, startPolling, syncNow } from './git-sync.js';
+import { log, withAccessLog } from './lib/logger.js';
+import { PORT, ROOT_DIR, TEMPLATES_CUSTOM_DIR, getCustomDirs } from './lib/config.js';
+import { getTemplates, reloadTemplates, respond404, respond500 } from './lib/template-engine.js';
+import { renderArticlePage, renderArticleList, renderTagListing } from './lib/renderers.js';
+import { serveFile, serveFileInDir } from './lib/static-files.js';
+import { getVisibleArticles, getArticleBySlug, reloadArticles } from './lib/articles.js';
+import { initSync, startPolling, syncNow } from './lib/git-sync.js';
 
 const HTML_HEADERS = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
 

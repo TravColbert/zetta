@@ -66,7 +66,7 @@ beforeEach(async () => {
   process.env.SYNC_INTERVAL = '1';
 
   // Dynamic import to pick up env vars; bust cache each time
-  gitSync = await import(`../git-sync.js?t=${Date.now()}`);
+  gitSync = await import(`../lib/git-sync.js?t=${Date.now()}`);
 });
 
 afterEach(() => {
@@ -91,7 +91,7 @@ describe('token injection (via clone args)', () => {
     process.env.ARTICLES_REPO_URL = 'https://github.com/test/articles.git';
     process.env.GIT_TOKEN = 'ghp_mytoken';
 
-    const mod = await import(`../git-sync.js?t=github-${Date.now()}`);
+    const mod = await import(`../lib/git-sync.js?t=github-${Date.now()}`);
     const callback = mock(() => {});
     await mod.initSync(callback);
 
@@ -108,7 +108,7 @@ describe('token injection (via clone args)', () => {
     process.env.ARTICLES_REPO_URL = 'https://gitlab.com/test/articles.git';
     process.env.GIT_TOKEN = 'glpat_mytoken';
 
-    const mod = await import(`../git-sync.js?t=gitlab-${Date.now()}`);
+    const mod = await import(`../lib/git-sync.js?t=gitlab-${Date.now()}`);
     const callback = mock(() => {});
     await mod.initSync(callback);
 
@@ -125,7 +125,7 @@ describe('initSync', () => {
   test('does nothing when no repo URLs configured', async () => {
     process.env.ARTICLES_REPO_URL = '';
     process.env.TEMPLATES_REPO_URL = '';
-    const mod = await import(`../git-sync.js?t=norepo-${Date.now()}`);
+    const mod = await import(`../lib/git-sync.js?t=norepo-${Date.now()}`);
     const callback = mock(() => {});
     await mod.initSync(callback);
     expect(callback).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe('startPolling and stopPolling', () => {
   test('does nothing when no repo URLs configured', async () => {
     process.env.ARTICLES_REPO_URL = '';
     process.env.TEMPLATES_REPO_URL = '';
-    const mod = await import(`../git-sync.js?t=nopoll-${Date.now()}`);
+    const mod = await import(`../lib/git-sync.js?t=nopoll-${Date.now()}`);
     const callback = mock(() => {});
     mod.startPolling(callback);
     // Should return immediately without setting timer

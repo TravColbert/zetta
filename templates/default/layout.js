@@ -1,5 +1,5 @@
-import { getVisibleArticles, getAllTags } from "../../articles.js";
-import { escapeHtml } from "../../utils.js";
+import { getVisibleArticles, getAllTags } from "../../lib/articles.js";
+import { escapeHtml } from "../../lib/utils.js";
 
 export function renderLayout({ slug, title, keywords, description, body }) {
   const descTag = description

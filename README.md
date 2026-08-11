@@ -175,9 +175,16 @@ zetta/
 │   │   ├── layout.js             # Built-in layout (JS)
 │   │   └── layout.html           # Reference layout (HTML, for customization)
 │   └── custom/                    # Custom templates (git-synced or manual, gitignored)
-├── articles.js         # Article loader
+├── lib/                # Application modules
+│   ├── config.js           # Paths and env-derived settings
+│   ├── articles.js         # Article loader
+│   ├── renderers.js        # Page rendering
+│   ├── template-engine.js  # Template/partial loading
+│   ├── static-files.js     # Static file serving
+│   ├── git-sync.js         # Git-based content syncing
+│   ├── logger.js           # NDJSON logging
+│   └── utils.js            # Markdown and HTML escaping helpers
 ├── server.js           # HTTP server
-├── git-sync.js         # Git-based content syncing
 ├── robots.txt          # Robots.txt (fallback)
 └── package.json
 ```

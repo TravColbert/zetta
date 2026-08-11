@@ -44,7 +44,7 @@ let mod;
 
 beforeAll(async () => {
   backupArticles();
-  mod = await import("../articles.js");
+  mod = await import("../lib/articles.js");
 });
 
 afterAll(() => {

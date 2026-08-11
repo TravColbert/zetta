@@ -45,7 +45,7 @@ let reloadArticles;
 beforeAll(async () => {
   backupArticles();
   loadFixtures(['valid-article.js', 'hidden-article.js', 'tagless-article.js']);
-  const articles = await import('../articles.js');
+  const articles = await import('../lib/articles.js');
   reloadArticles = articles.reloadArticles;
   reloadArticles();
   const layout = await import('../templates/default/layout.js');

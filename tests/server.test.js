@@ -19,7 +19,7 @@ const FIXTURES_DIR = join(__dirname, "fixtures", "articles");
 const PUBLIC_FIXTURES = join(__dirname, "fixtures", "public");
 
 // Mock git-sync before importing server
-mock.module("../git-sync.js", () => ({
+mock.module("../lib/git-sync.js", () => ({
   initSync: mock(() => Promise.resolve()),
   startPolling: mock(() => {}),
   stopPolling: mock(() => {}),
