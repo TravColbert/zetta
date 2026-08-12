@@ -57,6 +57,7 @@ ${tagLinks}
       ${body}
     </main>
   </div>
+  <script src="/js/widget.js" defer></script>
 </body>
 </html>`;
 }

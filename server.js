@@ -8,6 +8,7 @@ import { renderArticlePage, renderArticleList, renderTagListing } from './lib/re
 import { serveFile, serveFileInDir } from './lib/static-files.js';
 import { getVisibleArticles, getArticleBySlug, reloadArticles } from './lib/articles.js';
 import { initSync, startPolling, syncNow } from './lib/git-sync.js';
+import { handleChat } from './lib/chat.js';
 
 const HTML_HEADERS = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
 
@@ -90,6 +91,18 @@ const server = Bun.serve({
         return serveFileInDir(join(cssDir, cssMatch[1]), cssDir, respond404);
       }
 
+      // GET /js/:file
+      const jsMatch = pathname.match(/^\/js\/(.+)$/);
+      if (jsMatch) {
+        const { CUSTOM_JS_DIR } = getCustomDirs();
+        if (CUSTOM_JS_DIR) {
+          const customResponse = await serveFileInDir(join(CUSTOM_JS_DIR, jsMatch[1]), CUSTOM_JS_DIR, respond404);
+          if (customResponse.status !== 404) return customResponse;
+        }
+        const jsDir = join(ROOT_DIR, 'articles/public/js');
+        return serveFileInDir(join(jsDir, jsMatch[1]), jsDir, respond404);
+      }
+
       // GET /favicon.ico
       if (pathname === '/favicon.ico') {
         return serveFile(join(ROOT_DIR, 'articles/public/favicon.ico'), respond404);
@@ -98,6 +111,11 @@ const server = Bun.serve({
       // GET /robots.txt
       if (pathname === '/robots.txt') {
         return serveFile(join(ROOT_DIR, 'articles/public/robots.txt'), respond404);
+      }
+
+      // AI CHAT
+      if (pathname === '/api/chat') {
+        return handleChat(req, server.requestIP(req)?.address);
       }
 
       // POST /webhook
