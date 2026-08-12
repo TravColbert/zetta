@@ -8,7 +8,7 @@ module.exports = {
     order: 4,
   },
   content: `
-Zetta is an ultra-lightweight, no magic, low-ceremony blogging platform. Here's why we built it.
+Zetta is an AI-empowered, ultra-lightweight, no magic, low-ceremony personal blogging platform. Here's why we built it:
 
 ## Your Content is Yours
 
