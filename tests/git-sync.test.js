@@ -1,10 +1,38 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn, mock } from 'bun:test';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import {
+  describe,
+  test,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  afterAll,
+  spyOn,
+  mock,
+} from 'bun:test';
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
+const ARTICLES_DIR = join(ROOT, 'articles');
+const BACKUP_DIR = join(ROOT, 'articles.bak-git-sync-test');
+
+// A sync with ARTICLES_REPO_URL set clones into the real articles directory.
+// git is mocked, so the "clone" leaves a stub behind: the directory is put
+// back after every test, both to keep the tests independent and to leave the
+// working tree as it was found.
+function backupArticles() {
+  if (existsSync(ARTICLES_DIR)) {
+    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
+  }
+}
+
+function restoreArticles() {
+  if (!existsSync(BACKUP_DIR)) return;
+  rmSync(ARTICLES_DIR, { recursive: true, force: true });
+  cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
+}
 
 // Helper: create a mock Bun.spawn result
 function mockSpawnResult(stdout = '', stderr = '', exitCode = 0) {
@@ -28,6 +56,10 @@ function mockSpawnResult(stdout = '', stderr = '', exitCode = 0) {
 let gitSync;
 let spawnSpy;
 let spawnCalls;
+
+beforeAll(() => {
+  backupArticles();
+});
 
 beforeEach(async () => {
   spawnCalls = [];
@@ -75,19 +107,16 @@ afterEach(() => {
   process.env.GIT_TOKEN = '';
   process.env.ARTICLES_REPO_URL = '';
   process.env.TEMPLATES_REPO_URL = '';
+  restoreArticles();
+});
+
+afterAll(() => {
+  restoreArticles();
+  rmSync(BACKUP_DIR, { recursive: true, force: true });
 });
 
 describe('token injection (via clone args)', () => {
   test('GitHub URL gets bare token injected', async () => {
-    // Remove existing articles dir so it takes the fresh-clone path
-    const target = join(ROOT, 'articles');
-    const hadArticles = existsSync(target);
-    const backupDir = join(ROOT, 'articles.git-test-bak');
-    if (hadArticles) {
-      mkdirSync(backupDir, { recursive: true });
-      // Just rename by using a flag
-    }
-
     process.env.ARTICLES_REPO_URL = 'https://github.com/test/articles.git';
     process.env.GIT_TOKEN = 'ghp_mytoken';
 
