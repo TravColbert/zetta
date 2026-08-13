@@ -8,6 +8,7 @@ import { renderArticlePage, renderArticleList, renderTagListing } from './lib/re
 import { serveFile, serveFileInDir } from './lib/static-files.js';
 import { getVisibleArticles, getArticleBySlug, reloadArticles } from './lib/articles.js';
 import { initSync, startPolling, syncNow } from './lib/git-sync.js';
+import { reloadAiConfig } from './lib/ai.js';
 import { handleChat } from './lib/chat.js';
 
 const HTML_HEADERS = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
@@ -158,7 +159,11 @@ function handleSyncComplete({ articlesChanged, templatesChanged }) {
       log.info('auto-set LAYOUT_PATH', { path: customLayout });
     }
   }
-  if (articlesChanged) reloadArticles();
+  if (articlesChanged) {
+    reloadArticles();
+    // The chat config ships in the articles repo, so it changes with them.
+    reloadAiConfig();
+  }
   if (templatesChanged) reloadTemplates();
 }
 

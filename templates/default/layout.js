@@ -1,4 +1,5 @@
 import { getVisibleArticles, getAllTags } from "../../lib/articles.js";
+import { chatWidgetTag } from "../../lib/ai.js";
 import { escapeHtml } from "../../lib/utils.js";
 
 export function renderLayout({ slug, title, keywords, description, body }) {
@@ -57,7 +58,7 @@ ${tagLinks}
       ${body}
     </main>
   </div>
-  <script src="/js/widget.js" defer></script>
+  ${chatWidgetTag()}
 </body>
 </html>`;
 }
