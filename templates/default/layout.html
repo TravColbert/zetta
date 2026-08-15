@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head lang="en" itemscope="itemscope" itemtype="http://schema.org/WebSite">
+  {{> head}}
+</head>
+
+<body class="layout">
+  {{> header}}
+  <main class="section-layout">
+    <aside>
+      <div>
+        <div class="tags feature" hx-get="/tags" hx-target="this" hx-trigger="load"
+          hx-swap="innerHTML swap:0.25s settle:0.5s show:window:top=" hx-select="#tag-list"></div>
+        <div class="articles" hx-get="/articles" hx-target="this" hx-trigger="load"
+          hx-swap="innerHTML swap:0.25s settle:0.5s show:window:top" hx-select="#article-list"></div>
+      </div>
+    </aside>
+    <article id="article-content">
+      {{body}}
+    </article>
+  </main>
+  {{> footer}}
+</body>
+
+</html>

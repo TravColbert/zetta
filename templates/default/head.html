@@ -1,0 +1,33 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script defer="" src="https://unpkg.com/htmx.org@2.0.4"
+  integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/css/reset.css">
+<link rel="stylesheet" href="/css/app.css">
+<title hx-swap-oob="outerHTML:#page-title" id="page-title">{{title}}</title>
+<meta name="keywords" content="{{keywords}}" hx-swap-oob="outerHTML:#page-keywords" id="page-keywords">
+<meta name="description" content="{{description}}" hx-swap-oob="outerHTML:#page-description" id="page-description">
+<meta itemprop="name" content="traviscolbert.net :: Latest Article" hx-swap-oob="outerHTML:#page-itemprop-name"
+  id="page-itemprop-name">
+<meta itemprop="description" content="{{description}}" hx-swap-oob="outerHTML:#page-itemprop-description"
+  id="page-itemprop-description">
+<link rel="alternate" type="application/json+oembed" href="https://getoutofmyhead.dev/oembed_link.json"
+  title="traviscolbert.net :: Latest Article" hx-swap-oob="outerHTML:#page-itemprop-title" id="page-itemprop-title">
+<link rel="canonical" href="/articles/{{slug}}" hx-swap-oob="outerHTML:#page-canonical" id="page-canonical">
+<meta itemprop="image" content="/logo.png" id="page-itemprop-image">
+<meta http-equiv="Content-Security-Policy" content="style-src-elem 'self' 'unsafe-inline'">
+<style>
+  .htmx-indicator {
+    opacity: 0
+  }
+
+  .htmx-request .htmx-indicator {
+    opacity: 1;
+    transition: opacity 200ms ease-in;
+  }
+
+  .htmx-request.htmx-indicator {
+    opacity: 1;
+    transition: opacity 200ms ease-in;
+  }
+</style>
