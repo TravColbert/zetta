@@ -1,3 +1,84 @@
+/* Palette. Every color in this file comes from one of these tokens, so the
+   dark block below is the only place a second scheme has to be described.
+   `color-scheme` tells the browser the page supports both, which also fixes
+   form controls, scrollbars, and the widget's `Canvas` fallback. */
+:root {
+  color-scheme: light dark;
+
+  --z-bg: #fff;
+  --z-fg: #222;
+  --z-fg-soft: #333;
+  --z-heading: #4a4a4a;
+  --z-muted: #666;
+  --z-muted-soft: #888;
+  --z-surface: #f5f5f7;
+  --z-border: #e0e0e0;
+  --z-border-soft: #eee;
+
+  --z-brand: #0066cc;
+  --z-brand-fg: #fff;
+  --z-brand-nav: #eee;
+  --z-link-color: #0066cc;
+  --z-accent-bg: #0066cc;
+  --z-accent-bg-hover: #0052a3;
+  --z-accent-fg: #fff;
+
+  --z-chip-bg: #e6e6e8;
+  --z-chip-bg-hover: #d0d0d0;
+  --z-chip-fg: #444;
+
+  --z-error-bg: #fdecec;
+  --z-error-fg: #8a1c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --z-bg: #16181c;
+    --z-fg: #e8eaed;
+    --z-fg-soft: #d0d4da;
+    --z-heading: #c2c7cf;
+    --z-muted: #9aa2ad;
+    --z-muted-soft: #868e99;
+    --z-surface: #1e2126;
+    --z-border: #2c3037;
+    --z-border-soft: #24272c;
+
+    /* The header keeps its shape but drops to a deep blue instead of the
+       full-strength brand color, which is too bright as a filled bar here. */
+    --z-brand: #10233a;
+    --z-brand-fg: #e8eaed;
+    --z-brand-nav: #b9c2cd;
+    --z-link-color: #6cb0ff;
+    --z-accent-bg: #2f6fd0;
+    --z-accent-bg-hover: #3f80e0;
+    --z-accent-fg: #fff;
+
+    --z-chip-bg: #2c3037;
+    --z-chip-bg-hover: #383d45;
+    --z-chip-fg: #c3c8d0;
+
+    --z-error-bg: #3a1d1d;
+    --z-error-fg: #f4b8b8;
+  }
+}
+
+/* The chat widget in js/widget.js. Its stylesheet is inserted at the top of
+   <head>, above this file, so plain overrides win on source order — including
+   over its own prefers-color-scheme block. Pointing each variable at a token
+   makes the widget follow the palette above in both schemes. */
+:root {
+  --zai-bg: var(--z-bg);
+  --zai-fg: var(--z-fg);
+  --zai-muted: var(--z-muted);
+  --zai-border: var(--z-border);
+  --zai-bubble: var(--z-surface);
+  --zai-accent: var(--z-link-color);
+  --zai-accent-bg: var(--z-accent-bg);
+  --zai-accent-bg-hover: var(--z-accent-bg-hover);
+  --zai-accent-fg: var(--z-accent-fg);
+  --zai-error-bg: var(--z-error-bg);
+  --zai-error-fg: var(--z-error-fg);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,11 +90,12 @@ body {
     -apple-system,
     sans-serif;
   line-height: 1.6;
-  color: #222;
+  background: var(--z-bg);
+  color: var(--z-fg);
 }
 .site-header {
-  background: #1a1a2e;
-  color: #fff;
+  background: var(--z-brand);
+  color: var(--z-brand-fg);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
@@ -23,17 +105,17 @@ body {
   font-size: 1.25rem;
 }
 .site-header h1 a {
-  color: #fff;
+  color: var(--z-brand-fg);
   text-decoration: none;
 }
 .site-header nav a {
-  color: #ccc;
+  color: var(--z-brand-nav);
   text-decoration: none;
   margin-left: 1.5rem;
   font-size: 0.9rem;
 }
 .site-header nav a:hover {
-  color: #fff;
+  color: var(--z-brand-fg);
 }
 .layout {
   display: flex;
@@ -42,8 +124,8 @@ body {
 .sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: #f5f5f7;
-  border-right: 1px solid #e0e0e0;
+  background: var(--z-surface);
+  border-right: 1px solid var(--z-border);
   padding: 1.5rem 1rem;
   font-size: 0.9rem;
 }
@@ -51,7 +133,7 @@ body {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #888;
+  color: var(--z-muted-soft);
   margin-bottom: 0.5rem;
 }
 .sidebar ul {
@@ -62,15 +144,15 @@ body {
   margin-bottom: 0.25rem;
 }
 .sidebar a {
-  color: #333;
+  color: var(--z-fg-soft);
   text-decoration: none;
 }
 .sidebar a:hover {
-  color: #0066cc;
+  color: var(--z-link-color);
 }
 .sidebar a.active {
   font-weight: 600;
-  color: #0066cc;
+  color: var(--z-link-color);
 }
 .sidebar .tag-cloud {
   display: flex;
@@ -79,20 +161,28 @@ body {
   margin-bottom: 1.5rem;
 }
 .sidebar .tag {
-  background: #e0e0e0;
+  background: var(--z-chip-bg);
   padding: 0.15rem 0.5rem;
   border-radius: 3px;
   font-size: 0.8rem;
-  color: #444;
+  color: var(--z-chip-fg);
   text-decoration: none;
 }
 .sidebar .tag:hover {
-  background: #d0d0d0;
+  background: var(--z-chip-bg-hover);
 }
 main {
   flex: 1;
   padding: 2rem 3rem;
   max-width: 860px;
+}
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  color: var(--z-heading);
 }
 main h1 {
   margin-bottom: 0.5rem;
@@ -103,7 +193,7 @@ main h4 {
   margin-top: 1rem;
 }
 main .meta {
-  color: #666;
+  color: var(--z-muted);
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
@@ -111,21 +201,21 @@ main .tags {
   margin-bottom: 1rem;
 }
 main .tags .tag {
-  background: #e8e8e8;
+  background: var(--z-chip-bg);
   padding: 0.15rem 0.5rem;
   border-radius: 3px;
   font-size: 0.8rem;
-  color: #444;
+  color: var(--z-chip-fg);
   text-decoration: none;
 }
 main p {
   line-height: 2;
 }
 main a {
-  color: #0066cc;
+  color: var(--z-link-color);
 }
 main pre {
-  background: #f5f5f7;
+  background: var(--z-surface);
   padding: 1rem;
   border-radius: 4px;
   overflow-x: auto;
@@ -141,12 +231,12 @@ main table {
 }
 main th,
 main td {
-  border: 1px solid #ddd;
+  border: 1px solid var(--z-border);
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
 main th {
-  background: #f5f5f7;
+  background: var(--z-surface);
 }
 main ul,
 main ol {
@@ -162,14 +252,14 @@ main li {
 .article-list-item {
   margin-bottom: 1.25rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--z-border-soft);
 }
 .article-list-item a {
   font-size: 1.1rem;
   font-weight: 600;
 }
 .article-list-item .date {
-  color: #888;
+  color: var(--z-muted-soft);
   font-size: 0.85rem;
   margin-left: 0.5rem;
 }
@@ -180,7 +270,7 @@ main li {
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--z-border);
   }
   main {
     padding: 1.5rem;
