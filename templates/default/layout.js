@@ -32,7 +32,9 @@ export function renderLayout({ slug, title, keywords, description, body }) {
   <meta name="keywords" content="${escapeHtml(keywords)}">${descTag}
   <title>${escapeHtml(title)} — Zetta</title>
   <link rel="stylesheet" href="/css/app.css">
-  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 </head>
 <body>
   <header class="site-header">
