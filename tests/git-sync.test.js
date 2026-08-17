@@ -9,7 +9,8 @@ import {
   spyOn,
   mock,
 } from 'bun:test';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'fs';
+import * as realFs from 'fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -203,6 +204,37 @@ describe('initSync', () => {
       mod.stopPolling();
     } finally {
       restoreThemeDir();
+    }
+  });
+});
+
+describe('directory swap', () => {
+  // A container's overlay filesystem answers rename(2) on a directory that came
+  // from the image with EXDEV, so the first sync of a deploy cannot move the
+  // baked-in articles directory aside. The swap has to fall back to copying.
+  test('replaces the target when renameSync fails with EXDEV', async () => {
+    mock.module('fs', () => ({
+      ...realFs,
+      default: realFs.default,
+      renameSync: () => {
+        const err = new Error('EXDEV: cross-device link not permitted');
+        err.code = 'EXDEV';
+        throw err;
+      },
+    }));
+    try {
+      const mod = await import(`../lib/git-sync.js?t=exdev-${Date.now()}`);
+      const result = await mod.syncNow(mock(() => {}));
+      expect(result.articlesChanged).toBe(true);
+      // The clone's content is in place and the directory it replaced is gone.
+      expect(existsSync(join(ARTICLES_DIR, '.git'))).toBe(true);
+      expect(existsSync(join(ARTICLES_DIR, 'public'))).toBe(false);
+      // No .old- backup or .tmp- clone left next to it.
+      const siblings = readdirSync(dirname(ARTICLES_DIR));
+      expect(siblings.filter(n => n.startsWith('articles.'))).toEqual([]);
+      mod.stopPolling();
+    } finally {
+      mock.module('fs', () => realFs);
     }
   });
 });
