@@ -25,7 +25,8 @@ The server starts on port 3000 by default: `http://localhost:3000`
 | `GET /articles`       | Article listing, supports `?tag=` filter                                              |
 | `GET /articles/:slug` | Individual article page                                                               |
 | `GET /images/:file`   | Serves `articles/public/images/:file`                                                 |
-| `GET /css/:file`      | Serves custom CSS (if `LAYOUT_PATH` set) with fallback to `articles/public/css/:file` |
+| `GET /css/:file`      | Serves the active theme's `css/:file`, falling back to the built-in theme's           |
+| `GET /js/:file`       | Serves the active theme's `js/:file`, falling back to the built-in theme's            |
 | `GET /favicon.ico`    | Serves `articles/public/favicon.ico`                                                  |
 | `GET /robots.txt`     | Serves `articles/public/robots.txt`                                                   |
 | `POST /api/chat`      | Chat assistant (503 unless chat is configured — see below)                            |
@@ -53,31 +54,38 @@ module.exports = {
 - Articles without a valid `publishedAt` date are skipped.
 - Hidden articles (`hidden: true`) are excluded from the listing and the `/` redirect, but are still accessible by direct URL.
 
-## Layout / Templating
+## Themes
 
-The HTML wrapper is resolved at startup:
+Everything about a site's appearance lives in one directory under `templates/`. Zetta ships one, `templates/default`, and a site picks a different one by name:
 
-1. **Custom layout** — set `LAYOUT_PATH` to the path of an HTML file. The file must contain `{{title}}`, `{{keywords}}`, and `{{body}}` placeholders.
-2. **Built-in fallback** — if `LAYOUT_PATH` is unset or the file doesn't exist, `templates/default/layout.js` is used.
+```
+CUSTOM_THEME=my-theme      # renders from templates/my-theme
+```
 
-### Custom 404 page
+With `CUSTOM_THEME` unset, `templates/default` is used. The theme directory has a fixed shape, and every part of it is optional:
 
-Set `NOT_FOUND_PATH` to the path of any HTML file to replace the built-in 404 page. `templates/default/partials/404.html` is the built-in page and serves as a starting point.
+```
+templates/my-theme/
+├── layout.html         # the page wrapper
+├── head.html           # partials that layout.html pulls in with {{> name}}
+├── header.html
+├── footer.html
+├── partials/           # content partials — see the table below
+│   ├── article.html
+│   └── tag-list.html
+├── css/                # served at /css/:file
+│   └── app.css
+└── js/                 # served at /js/:file
+    └── widget.js
+```
 
-### Custom 500 page
+**A theme only has to ship what it wants to change.** Content partials, CSS files and JS files each fall through to `templates/default` file by file, so a theme with one `partials/article.html` and one `css/app.css` gets the rest of the pages, the reset stylesheet and the chat widget script from the built-in theme.
 
-Set `SERVER_ERROR_PATH` to the path of any HTML file to replace the built-in 500 page. `templates/default/partials/500.html` is the built-in page and serves as a starting point.
+Note the two partial locations. `layout.html` resolves its `{{> name}}` tags against **the theme's own root directory**, which is where `head.html` and the like belong. The content partials that build the pages inside the layout are read from **`partials/`**. The distinction matters because only the second location falls through to the built-in theme.
 
-### Partials
+### The layout
 
-Templates support `{{> name}}` partial inclusion. When a template contains `{{> head}}`, the server replaces it with the contents of `head.html` from the partials directory for that template:
-
-- **Built-in templates** (`404.html`, `500.html`): partials are loaded from `templates/default/partials/`.
-- **Custom templates** (set via env vars): layout partials are loaded from the **same directory as the custom template file**; content partials are loaded from a `partials/` subdirectory next to the layout file.
-
-Partials are resolved at startup — no runtime overhead. Partials themselves do not expand further `{{> ...}}` tags (single-level only). If a partial file is not found, a warning is logged and the tag resolves to an empty string.
-
-### Custom layout placeholders
+`layout.html` is the whole HTML document, with placeholders for the parts that change per page. A theme that has no `layout.html` — the built-in theme included — is rendered by `templates/default/layout.js` instead, which builds the same document in JS.
 
 | Placeholder       | Value                                               |
 | ----------------- | --------------------------------------------------- |
@@ -87,7 +95,9 @@ Partials are resolved at startup — no runtime overhead. Partials themselves do
 | `{{description}}` | Article blurb (empty if none)                       |
 | `{{body}}`        | Rendered HTML content                               |
 | `{{chatWidget}}`  | Chat widget script tag, or empty when chat is off   |
-| `{{> name}}`      | Contents of `name.html` from the partials directory |
+| `{{> name}}`      | Contents of `name.html` from the theme directory    |
+
+`{{body}}` is inserted as-is, since it is already-rendered HTML. Everything else is HTML-escaped, because it lands in a `<title>` or an attribute value where a stray quote or angle bracket in an article's own metadata would otherwise break out of the tag.
 
 The chat widget inherits the page's font and text color, and everything else
 about its appearance is a `--zai-*` custom property you can set from your own
@@ -95,9 +105,26 @@ stylesheet. Its CSS is inserted ahead of yours in `<head>`, so your rules
 override it on source order without `!important`. The full variable list is in
 the [Custom Templates](articles/3-custom-templates.js) article.
 
+### Custom 404 page
+
+Set `NOT_FOUND_PATH` to the path of any HTML file to replace the built-in 404 page. `templates/default/partials/404.html` is the built-in page and serves as a starting point.
+
+### Custom 500 page
+
+Set `SERVER_ERROR_PATH` to the path of any HTML file to replace the built-in 500 page. `templates/default/partials/500.html` is the built-in page and serves as a starting point.
+
+### How `{{> name}}` is resolved
+
+A `{{> head}}` tag is replaced with the contents of `head.html`. Which directory that is read from depends on the file holding the tag:
+
+- **`layout.html`** and the custom **404/500** pages read from their own directory. For a theme's layout that is the theme root; for a file named by `NOT_FOUND_PATH` or `SERVER_ERROR_PATH` it is wherever that file sits.
+- **Content partials** read from the theme's `partials/`, then from `templates/default/partials/`.
+
+Partials are resolved at startup — no runtime overhead. Partials themselves do not expand further `{{> ...}}` tags (single-level only). If a partial file is not found, a warning is logged and the tag resolves to an empty string.
+
 ### Content partials
 
-The article and listing pages are assembled from partial files in `templates/partials/`. When `LAYOUT_PATH` is set, custom content partials are loaded from a `partials/` subdirectory next to the layout file, with per-file fall-through to the built-in versions.
+The article and listing pages are assembled from the partial files below. Each is read from the active theme's `partials/` directory if it has one, and from `templates/default/partials/` otherwise.
 
 | File                      | Used for                                              | Placeholders                                                                 |
 | ------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -167,7 +194,7 @@ tag when chat is on and nothing when it is off.
 | Variable                | Default  | Description                                                                                                                               |
 | ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `PORT`                  | `3000`   | Port the server listens on                                                                                                                |
-| `LAYOUT_PATH`           | _(none)_ | Path to a custom HTML layout file. Also enables custom partials (`partials/` subdir) and custom CSS (`css/` subdir) relative to this file |
+| `CUSTOM_THEME`          | _(none)_ | Name of a directory under `templates/` to render from. Unset means `templates/default`                                                     |
 | `NOT_FOUND_PATH`        | _(none)_ | Path to a custom 404 HTML file                                                                                                            |
 | `SERVER_ERROR_PATH`     | _(none)_ | Path to a custom 500 HTML file                                                                                                            |
 | `ARTICLES_REPO_URL`     | _(none)_ | Git HTTPS URL for articles repo                                                                                                           |
@@ -180,18 +207,20 @@ tag when chat is on and nothing when it is off.
 | `ANTHROPIC_API_KEY`     | _(none)_ | Enables the chat assistant. Without it there is no widget and `/api/chat` answers 503                                                     |
 | `ANTHROPIC_MODEL`       | `claude-opus-5` | Model the assistant calls                                                                                                          |
 | `RESERVATION_WEBHOOK_URL` | _(none)_ | Where completed booking and message actions are POSTed. Signed with `WEBHOOK_SECRET` when one is set                                    |
-
-When `LAYOUT_PATH` is set, content partials are loaded from a `partials/` subdirectory next to the layout file, with per-file fall-through to the built-in versions. CSS files are similarly resolved from a `css/` subdirectory before falling back to `articles/public/css/`.
+| `ARTICLES_DIR`          | `articles/` | Absolute path to render articles from. Only the tests set this                                                                          |
+| `TEMPLATE_DIR`          | _(none)_ | Absolute path to a theme directory, taking precedence over `CUSTOM_THEME`. Only the tests set this                                        |
 
 ### Git-Based Content Syncing
 
-Zetta can sync `articles/` and `templates/custom/` from separate git repos at runtime. Set `ARTICLES_REPO_URL` and/or `TEMPLATES_REPO_URL` to enable. Content is cloned on startup (non-blocking) and kept in sync via polling. Push a webhook to trigger immediate sync:
+Zetta can sync the articles directory and the active theme directory from separate git repos at runtime. Set `ARTICLES_REPO_URL` and/or `TEMPLATES_REPO_URL` to enable; either one works on its own. Content is cloned on startup (non-blocking) and kept in sync by polling. Push a webhook to trigger an immediate sync:
 
 ```bash
 curl -X POST -H "X-Webhook-Secret: mysecret" http://localhost:3000/webhook
 ```
 
-When `TEMPLATES_REPO_URL` is set but `LAYOUT_PATH` is not, `LAYOUT_PATH` is auto-set to `templates/custom/layout.html` after the templates repo is cloned.
+A repo is cloned over the directory it targets: `ARTICLES_REPO_URL` into `articles/`, and `TEMPLATES_REPO_URL` into `templates/<CUSTOM_THEME>/`. **A templates sync therefore needs `CUSTOM_THEME` set** — without a theme of its own the target would be `templates/default`, and the sync would clone over the templates that ship with Zetta. It is skipped with no error if `CUSTOM_THEME` is unset.
+
+The first clone into a directory that already has content goes to a temporary directory and is swapped into place, so a failed clone leaves the running site with its current content rather than nothing to serve. After that, syncs are `git pull --ff-only`. Articles and templates are reloaded only when the pull actually moved `HEAD`; the chat configuration is re-read with the articles, since it ships alongside them.
 
 ### Docker
 
@@ -206,8 +235,10 @@ Variables can be set in a `.env` file in the project root — Bun loads it autom
 
 ```
 PORT=8080
-LAYOUT_PATH=/path/to/my/layout.html
+CUSTOM_THEME=my-theme
 ```
+
+Note that Bun loads `.env` for `bun test` as well as for the server. The test suite clears the settings that would otherwise change what it renders — see `tests/setup.js`.
 
 ## Project Structure
 
@@ -217,27 +248,33 @@ zetta/
 │   ├── ai.js               # Chat assistant config (prompt + tools)
 │   ├── topics.md           # Topic policy served to the assistant
 │   └── public/
-│       ├── css/
-│       ├── js/
-│       │   └── widget.js       # Chat widget
 │       ├── images/
 │       ├── favicon.ico
 │       └── robots.txt
 ├── templates/
-│   ├── default/                   # Built-in templates
-│   │   ├── partials/
-│   │   │   ├── head.html              # Shared <head> fragment
-│   │   │   ├── article.html           # Article page structure
-│   │   │   ├── article-tag.html       # Tag link on article page
-│   │   │   ├── listing.html           # Listing page structure (tag-filtered view)
-│   │   │   ├── listing-item.html      # Listing row
-│   │   │   ├── listing-item-blurb.html # Blurb paragraph
-│   │   │   ├── tag-cloud-item.html    # Tag cloud link
-│   │   │   ├── clear-filter.html      # Clear filter link
-│   │   │   ├── 404.html              # Built-in 404 page
-│   │   │   └── 500.html              # Built-in 500 page
-│   │   └── layout.js             # Built-in layout (JS)
-│   └── custom/                    # Custom templates (git-synced or manual, gitignored)
+│   ├── default/                   # Built-in theme; every other theme falls back to it
+│   │   ├── layout.js                  # Built-in layout (JS, used when a theme has no layout.html)
+│   │   ├── css/
+│   │   │   ├── reset.css
+│   │   │   └── app.css
+│   │   ├── js/
+│   │   │   └── widget.js              # Chat widget
+│   │   └── partials/
+│   │       ├── head.html              # Shared <head> fragment
+│   │       ├── article.html           # Article page structure
+│   │       ├── article-tag.html       # Tag link on article page
+│   │       ├── article-list.html      # Article list page structure
+│   │       ├── article-list-item.html # Article list row
+│   │       ├── tag-list.html          # Tag listing structure
+│   │       ├── tag-list-item.html     # Tag link in the tag listing
+│   │       ├── listing.html           # Listing page structure (tag-filtered view)
+│   │       ├── listing-item.html      # Listing row
+│   │       ├── listing-item-blurb.html # Blurb paragraph
+│   │       ├── tag-cloud-item.html    # Tag cloud link
+│   │       ├── clear-filter.html      # Clear filter link
+│   │       ├── 404.html               # Built-in 404 page
+│   │       └── 500.html               # Built-in 500 page
+│   └── <CUSTOM_THEME>/            # The site's own theme (gitignored — its own repo)
 ├── lib/                # Application modules
 │   ├── config.js           # Paths and env-derived settings
 │   ├── articles.js         # Article loader
@@ -252,7 +289,20 @@ zetta/
 │   ├── webhook.js          # Outbound action webhook
 │   ├── logger.js           # NDJSON logging
 │   └── utils.js            # Markdown and HTML escaping helpers
+├── tests/              # Test suite (bun test)
+│   ├── setup.js            # Preload: scratch directories, and clears .env settings
+│   └── fixtures/           # Fixture articles, chat configs and a partial theme
 ├── server.js           # HTTP server
-├── robots.txt          # Robots.txt (fallback)
+├── bunfig.toml         # Registers the test preload
 └── package.json
 ```
+
+## Tests
+
+```bash
+bun test
+```
+
+The suite renders into scratch directories under `tests/.work/` rather than into `articles/` and `templates/`, so a run leaves the working tree alone — which matters because in a real deployment those directories hold content from another repo. `tests/setup.js` sets that up and clears the deployment settings Bun would otherwise load from `.env`.
+
+The theme layer is decided when `lib/config.js` is first imported, and one `bun test` run shares a single process. `tests/theme.test.js` therefore starts a server in a subprocess to exercise a custom theme end to end.
