@@ -103,8 +103,6 @@ const server = Bun.serve({
 
       // GET /css/:file
       const cssMatch = pathname.match(/^\/css\/(.+)$/);
-      console.dir(getCustomDirs());
-      console.log(`TEMPLATE_DIR: ${TEMPLATE_DIR}`);
       if (cssMatch) {
         const { CUSTOM_CSS_DIR } = getCustomDirs();
         if (CUSTOM_CSS_DIR) {
