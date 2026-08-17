@@ -13,8 +13,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const ARTICLES_DIR = join(ROOT, "articles");
-const BACKUP_DIR = join(ROOT, "articles.bak-server-test");
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 const FIXTURES_DIR = join(__dirname, "fixtures", "articles");
 const PUBLIC_FIXTURES = join(__dirname, "fixtures", "public");
 
@@ -28,22 +29,6 @@ mock.module("../lib/git-sync.js", () => ({
     return Promise.resolve({ articlesChanged: false, templatesChanged: false });
   }),
 }));
-
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
-
-function restoreArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  }
-  if (existsSync(BACKUP_DIR)) {
-    cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-    rmSync(BACKUP_DIR, { recursive: true, force: true });
-  }
-}
 
 function loadFixtures(names) {
   if (existsSync(ARTICLES_DIR)) {
@@ -76,7 +61,6 @@ process.env.ARTICLES_REPO_URL = "";
 process.env.TEMPLATES_REPO_URL = "";
 
 beforeAll(async () => {
-  backupArticles();
   loadFixtures([
     "valid-article.js",
     "hidden-article.js",
@@ -93,7 +77,6 @@ beforeAll(async () => {
 
 afterAll(() => {
   if (server) server.stop();
-  restoreArticles();
 });
 
 describe("GET /", () => {
@@ -222,17 +205,31 @@ describe("GET /images/:file", () => {
   });
 });
 
+// CSS and JS come from the active theme's css/ and js/ directories, not from
+// articles/public. theme.test.js covers the fall-through to the built-in theme
+// that a partial theme depends on.
 describe("GET /css/:file", () => {
-  test("serves CSS file", async () => {
-    const res = await fetch(`${BASE}/css/style.css`);
+  test("serves CSS file from the theme", async () => {
+    const res = await fetch(`${BASE}/css/app.css`);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/css");
-    const text = await res.text();
-    expect(text).toContain("margin");
   });
 
   test("returns 404 for non-existent CSS file", async () => {
     const res = await fetch(`${BASE}/css/nope.css`);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /js/:file", () => {
+  test("serves the chat widget from the theme", async () => {
+    const res = await fetch(`${BASE}/js/widget.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/javascript");
+  });
+
+  test("returns 404 for non-existent JS file", async () => {
+    const res = await fetch(`${BASE}/js/nope.js`);
     expect(res.status).toBe(404);
   });
 });

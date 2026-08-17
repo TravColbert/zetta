@@ -9,31 +9,20 @@ import {
   spyOn,
   mock,
 } from 'bun:test';
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const ARTICLES_DIR = join(ROOT, 'articles');
-const BACKUP_DIR = join(ROOT, 'articles.bak-git-sync-test');
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 
-// A sync with ARTICLES_REPO_URL set clones into the real articles directory.
-// git is mocked, so the "clone" leaves a stub behind: the directory is put
-// back after every test, both to keep the tests independent and to leave the
-// working tree as it was found.
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
+const TEMPLATE_DIR = process.env.TEMPLATE_DIR;
 
-function restoreArticles() {
-  if (!existsSync(BACKUP_DIR)) return;
-  rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-}
-
+// git is mocked, so a "clone" only leaves a stub directory behind. Both target
+// directories are scratch copies, so a sync is free to replace them.
 // Helper: create a mock Bun.spawn result
 function mockSpawnResult(stdout = '', stderr = '', exitCode = 0) {
   return {
@@ -57,22 +46,39 @@ let gitSync;
 let spawnSpy;
 let spawnCalls;
 
-beforeAll(() => {
-  backupArticles();
-});
+// One SHA per `rev-parse HEAD`, in order: a pull reads the SHA before and after,
+// so two different values are what makes it register as a change. The default is
+// the same value twice — a pull that brought nothing down.
+let shas;
+
+function headSequence(...values) {
+  shas = values;
+}
+
+// Each test starts from a known target directory: a plain directory takes the
+// clone path, one with a .git in it takes the pull path.
+function resetArticlesDir({ asRepo = false } = {}) {
+  rmSync(ARTICLES_DIR, { recursive: true, force: true });
+  mkdirSync(join(ARTICLES_DIR, 'public'), { recursive: true });
+  if (asRepo) mkdirSync(join(ARTICLES_DIR, '.git'), { recursive: true });
+}
+
+function restoreThemeDir() {
+  rmSync(TEMPLATE_DIR, { recursive: true, force: true });
+  cpSync(join(ROOT, 'templates', 'default'), TEMPLATE_DIR, { recursive: true });
+}
 
 beforeEach(async () => {
   spawnCalls = [];
+  headSequence('abc123', 'abc123');
+  resetArticlesDir();
   spawnSpy = spyOn(Bun, 'spawn').mockImplementation((args, opts) => {
     spawnCalls.push({ args, opts });
     const cmd = args.join(' ');
 
     // Default: return success with empty output
     if (cmd.includes('rev-parse HEAD')) {
-      // Return a fake SHA; use call count to vary
-      const sha = spawnCalls.filter(c => c.args.join(' ').includes('rev-parse')).length <= 1
-        ? 'abc123' : 'abc123';
-      return mockSpawnResult(sha);
+      return mockSpawnResult(shas.length > 1 ? shas.shift() : shas[0]);
     }
     if (cmd.includes('pull')) {
       return mockSpawnResult('', '', 0);
@@ -107,12 +113,11 @@ afterEach(() => {
   process.env.GIT_TOKEN = '';
   process.env.ARTICLES_REPO_URL = '';
   process.env.TEMPLATES_REPO_URL = '';
-  restoreArticles();
 });
 
 afterAll(() => {
-  restoreArticles();
-  rmSync(BACKUP_DIR, { recursive: true, force: true });
+  resetArticlesDir();
+  restoreThemeDir();
 });
 
 describe('token injection (via clone args)', () => {
@@ -167,6 +172,58 @@ describe('initSync', () => {
     const result = callback.mock.calls[0][0];
     expect(result).toHaveProperty('articlesChanged');
     expect(result).toHaveProperty('templatesChanged');
+  });
+
+  // Only one of the two repos is configured here, which is the ordinary case for
+  // a site that keeps its articles in git and its theme in the image. Reporting
+  // it has to survive the missing half.
+  test('reports the articles repo alone without touching templatesChanged', async () => {
+    const callback = mock(() => {});
+    const result = await gitSync.syncNow(callback);
+    expect(result.articlesChanged).toBe(true);
+    expect(result.templatesChanged).toBe(false);
+  });
+
+  test('runs the initial sync when only the articles repo is configured', async () => {
+    const callback = mock(() => {});
+    await gitSync.initSync(callback);
+    const cloned = spawnCalls.some(c => c.args.join(' ').includes('clone'));
+    expect(cloned).toBe(true);
+    expect(callback).toHaveBeenCalled();
+  });
+
+  test('reports the templates repo alone without touching articlesChanged', async () => {
+    process.env.ARTICLES_REPO_URL = '';
+    process.env.TEMPLATES_REPO_URL = 'https://github.com/test/theme.git';
+    try {
+      const mod = await import(`../lib/git-sync.js?t=tmplonly-${Date.now()}`);
+      const result = await mod.syncNow(mock(() => {}));
+      expect(result.templatesChanged).toBe(true);
+      expect(result.articlesChanged).toBe(false);
+      mod.stopPolling();
+    } finally {
+      restoreThemeDir();
+    }
+  });
+});
+
+describe('change detection on pull', () => {
+  test('a pull that moves HEAD counts as a change', async () => {
+    resetArticlesDir({ asRepo: true });
+    headSequence('before1', 'after2');
+    const callback = mock(() => {});
+    const result = await gitSync.syncNow(callback);
+    expect(result.articlesChanged).toBe(true);
+    expect(callback).toHaveBeenCalled();
+  });
+
+  test('a pull that changes nothing does not call onComplete', async () => {
+    resetArticlesDir({ asRepo: true });
+    headSequence('same1', 'same1');
+    const callback = mock(() => {});
+    const result = await gitSync.syncNow(callback);
+    expect(result.articlesChanged).toBe(false);
+    expect(callback).not.toHaveBeenCalled();
   });
 });
 

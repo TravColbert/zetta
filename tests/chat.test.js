@@ -12,26 +12,11 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const ARTICLES_DIR = join(ROOT, "articles");
-const BACKUP_DIR = join(ROOT, "articles.bak-chat-test");
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 const ARTICLE_FIXTURES = join(__dirname, "fixtures", "articles");
 const AI_FIXTURES = join(__dirname, "fixtures", "ai");
-
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
-
-function restoreArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  }
-  if (existsSync(BACKUP_DIR)) {
-    cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-    rmSync(BACKUP_DIR, { recursive: true, force: true });
-  }
-}
 
 function setupArticles() {
   if (existsSync(ARTICLES_DIR)) {
@@ -86,7 +71,6 @@ let guards;
 const originalKey = process.env.ANTHROPIC_API_KEY;
 
 beforeAll(async () => {
-  backupArticles();
   setupArticles();
   process.env.ANTHROPIC_API_KEY = "test-key";
 
@@ -117,7 +101,6 @@ afterAll(() => {
   globalThis.fetch = realFetch;
   if (originalKey === undefined) delete process.env.ANTHROPIC_API_KEY;
   else process.env.ANTHROPIC_API_KEY = originalKey;
-  restoreArticles();
 });
 
 describe("handleChat request validation", () => {

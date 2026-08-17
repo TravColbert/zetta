@@ -4,11 +4,13 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// The widget ships with the built-in theme. A theme that wants its own serves it
+// from its js/ directory instead, so this is the copy every site falls back to.
 const WIDGET_PATH = join(
   __dirname,
   "..",
-  "articles",
-  "public",
+  "templates",
+  "default",
   "js",
   "widget.js",
 );

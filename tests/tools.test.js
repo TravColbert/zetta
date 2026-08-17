@@ -5,26 +5,11 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const ARTICLES_DIR = join(ROOT, "articles");
-const BACKUP_DIR = join(ROOT, "articles.bak-tools-test");
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 const ARTICLE_FIXTURES = join(__dirname, "fixtures", "articles");
 const AI_FIXTURES = join(__dirname, "fixtures", "ai");
-
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
-
-function restoreArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  }
-  if (existsSync(BACKUP_DIR)) {
-    cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-    rmSync(BACKUP_DIR, { recursive: true, force: true });
-  }
-}
 
 // Lays down a set of articles plus one ai.js config, then reloads both caches.
 function setup({ articles = [], config = "valid.js", extras = [] }) {
@@ -58,14 +43,9 @@ let articlesMod;
 let aiMod;
 
 beforeAll(async () => {
-  backupArticles();
   articlesMod = await import("../lib/articles.js");
   aiMod = await import("../lib/ai.js");
   tools = await import("../lib/tools.js");
-});
-
-afterAll(() => {
-  restoreArticles();
 });
 
 describe("getToolDefinitions", () => {

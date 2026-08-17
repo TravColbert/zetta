@@ -1,8 +1,14 @@
 import { join } from "path";
-import { existsSync } from "fs";
 import { timingSafeEqual } from "crypto";
 import { log, withAccessLog } from "./lib/logger.js";
-import { PORT, ROOT_DIR, TEMPLATE_DIR, getCustomDirs } from "./lib/config.js";
+import {
+  PORT,
+  ARTICLES_DIR,
+  THEME_CSS_DIR,
+  THEME_JS_DIR,
+  BUILTIN_CSS_DIR,
+  BUILTIN_JS_DIR,
+} from "./lib/config.js";
 import {
   getTemplates,
   reloadTemplates,
@@ -27,6 +33,22 @@ import { handleChat } from "./lib/chat.js";
 const HTML_HEADERS = {
   headers: { "Content-Type": "text/html; charset=utf-8" },
 };
+
+// A theme only has to ship the assets it wants to change: anything it does not
+// have is served from the built-in theme, the same per-file fall-through the
+// content partials use. Without it a theme with no js/ of its own would 404 the
+// chat widget script.
+async function serveThemeAsset(themeDir, builtinDir, file) {
+  if (themeDir !== builtinDir) {
+    const themeResponse = await serveFileInDir(
+      join(themeDir, file),
+      themeDir,
+      respond404,
+    );
+    if (themeResponse.status !== 404) return themeResponse;
+  }
+  return serveFileInDir(join(builtinDir, file), builtinDir, respond404);
+}
 
 function secureCompare(a, b) {
   const bufA = Buffer.from(String(a));
@@ -93,7 +115,7 @@ const server = Bun.serve({
       // GET /images/:file
       const imageMatch = pathname.match(/^\/images\/(.+)$/);
       if (imageMatch) {
-        const imagesDir = join(ROOT_DIR, "articles/public/images");
+        const imagesDir = join(ARTICLES_DIR, "public/images");
         return serveFileInDir(
           join(imagesDir, imageMatch[1]),
           imagesDir,
@@ -104,49 +126,23 @@ const server = Bun.serve({
       // GET /css/:file
       const cssMatch = pathname.match(/^\/css\/(.+)$/);
       if (cssMatch) {
-        const { CUSTOM_CSS_DIR } = getCustomDirs();
-        if (CUSTOM_CSS_DIR) {
-          const customResponse = await serveFileInDir(
-            join(CUSTOM_CSS_DIR, cssMatch[1]),
-            CUSTOM_CSS_DIR,
-            respond404,
-          );
-          if (customResponse.status !== 404) return customResponse;
-        }
-        const cssDir = join(TEMPLATE_DIR, "css");
-        return serveFileInDir(join(cssDir, cssMatch[1]), cssDir, respond404);
+        return serveThemeAsset(THEME_CSS_DIR, BUILTIN_CSS_DIR, cssMatch[1]);
       }
 
       // GET /js/:file
       const jsMatch = pathname.match(/^\/js\/(.+)$/);
       if (jsMatch) {
-        const { CUSTOM_JS_DIR } = getCustomDirs();
-        if (CUSTOM_JS_DIR) {
-          const customResponse = await serveFileInDir(
-            join(CUSTOM_JS_DIR, jsMatch[1]),
-            CUSTOM_JS_DIR,
-            respond404,
-          );
-          if (customResponse.status !== 404) return customResponse;
-        }
-        const jsDir = join(ROOT_DIR, "articles/public/js");
-        return serveFileInDir(join(jsDir, jsMatch[1]), jsDir, respond404);
+        return serveThemeAsset(THEME_JS_DIR, BUILTIN_JS_DIR, jsMatch[1]);
       }
 
       // GET /favicon.ico
       if (pathname === "/favicon.ico") {
-        return serveFile(
-          join(ROOT_DIR, "articles/public/favicon.ico"),
-          respond404,
-        );
+        return serveFile(join(ARTICLES_DIR, "public/favicon.ico"), respond404);
       }
 
       // GET /robots.txt
       if (pathname === "/robots.txt") {
-        return serveFile(
-          join(ROOT_DIR, "articles/public/robots.txt"),
-          respond404,
-        );
+        return serveFile(join(ARTICLES_DIR, "public/robots.txt"), respond404);
       }
 
       // AI CHAT
@@ -198,17 +194,6 @@ const server = Bun.serve({
 log.info("server started", { port: server.port });
 
 function handleSyncComplete({ articlesChanged, templatesChanged }) {
-  if (
-    templatesChanged &&
-    !process.env.LAYOUT_PATH &&
-    process.env.TEMPLATES_REPO_URL
-  ) {
-    const customLayout = join(TEMPLATE_DIR, "layout.html");
-    if (existsSync(customLayout)) {
-      process.env.LAYOUT_PATH = customLayout;
-      log.info("auto-set LAYOUT_PATH", { path: customLayout });
-    }
-  }
   if (articlesChanged) {
     reloadArticles();
     // The chat config ships in the articles repo, so it changes with them.

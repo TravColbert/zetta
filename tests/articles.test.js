@@ -5,25 +5,10 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const ARTICLES_DIR = join(ROOT, "articles");
-const BACKUP_DIR = join(ROOT, "articles.bak-articles-test");
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 const FIXTURES_DIR = join(__dirname, "fixtures", "articles");
-
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
-
-function restoreArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  }
-  if (existsSync(BACKUP_DIR)) {
-    cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-    rmSync(BACKUP_DIR, { recursive: true, force: true });
-  }
-}
 
 function loadFixtures(names) {
   // Clear articles dir but keep public/
@@ -43,12 +28,7 @@ function loadFixtures(names) {
 let mod;
 
 beforeAll(async () => {
-  backupArticles();
   mod = await import("../lib/articles.js");
-});
-
-afterAll(() => {
-  restoreArticles();
 });
 
 describe("loadArticles", () => {

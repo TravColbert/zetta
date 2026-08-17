@@ -1,33 +1,18 @@
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "bun:test";
-import { cpSync, rmSync, existsSync, writeFileSync } from "fs";
+import { cpSync, rmSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const ARTICLES_DIR = join(ROOT, "articles");
+// The articles directory is a scratch directory created by tests/setup.js, not
+// the one in the working tree: these tests delete and rewrite its contents.
+const ARTICLES_DIR = process.env.ARTICLES_DIR;
 const CONFIG_PATH = join(ARTICLES_DIR, "ai.js");
-const BACKUP_DIR = join(ROOT, "articles.bak-ai-test");
 const FIXTURES_DIR = join(__dirname, "fixtures", "ai");
 
 // Same destructive pattern as articles.test.js: ARTICLES_DIR is fixed at
 // import time, so the only way to test another config is to swap the real one.
-function backupArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    cpSync(ARTICLES_DIR, BACKUP_DIR, { recursive: true });
-  }
-}
-
-function restoreArticles() {
-  if (existsSync(ARTICLES_DIR)) {
-    rmSync(ARTICLES_DIR, { recursive: true, force: true });
-  }
-  if (existsSync(BACKUP_DIR)) {
-    cpSync(BACKUP_DIR, ARTICLES_DIR, { recursive: true });
-    rmSync(BACKUP_DIR, { recursive: true, force: true });
-  }
-}
-
 function useConfig(name) {
   cpSync(join(FIXTURES_DIR, name), CONFIG_PATH);
   mod.reloadAiConfig();
@@ -47,17 +32,12 @@ let mod;
 const originalKey = process.env.ANTHROPIC_API_KEY;
 
 beforeAll(async () => {
-  backupArticles();
   mod = await import("../lib/ai.js");
 });
 
 afterEach(() => {
   if (originalKey === undefined) delete process.env.ANTHROPIC_API_KEY;
   else process.env.ANTHROPIC_API_KEY = originalKey;
-});
-
-afterAll(() => {
-  restoreArticles();
 });
 
 describe("getAiConfig", () => {
