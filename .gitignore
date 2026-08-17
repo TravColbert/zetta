@@ -1,6 +1,14 @@
 node_modules/
 .env*
-templates/custom/
 CLAUDE.md
 TODO.md
 .local/
+
+# Only the built-in theme belongs to Zetta. A theme named by CUSTOM_THEME is the
+# site's own — checked out by hand or cloned by the templates sync — so it stays
+# out of this repo even though it sits under templates/.
+templates/*
+!templates/default/
+
+# Scratch directories the tests render into.
+tests/.work/

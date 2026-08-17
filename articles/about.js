@@ -8,7 +8,7 @@ module.exports = {
     order: 4,
   },
   content: `
-Zetta is an ultra-lightweight, no magic, low-ceremony blogging platform. Here's why we built it.
+Zetta is an AI-empowered, ultra-lightweight, no magic, low-ceremony personal blogging platform. Here's why we built it:
 
 ## Your Content is Yours
 
@@ -20,13 +20,13 @@ Redeploying is just a webhook.
 
 ## Low Attack Surface, Runs Anywhere
 
-As of this writing Zetta has exactly ONE dependency: the **[marked](https://github.com/markedjs/marked)** Markdown renderer.
+As of this writing Zetta has exactly ONE dependency: the **[Marked](https://github.com/markedjs/marked)** Markdown renderer.
 
-Everything else is just vanilla **[Bun](https://bun.com/)**.
+Everything else is just vanilla **JavaScript/[Bun](https://bun.com/)**.
 
 There's no ORM, no bundler.
 
-Our goal was that you should be able to run Zetta anywhere. In a container. On a host. In a box. On a boat...
+Our goal was that you should be able to run Zetta anywhere. In a container. On a host. In a moat. On a boat...
 
 ## Comprehensible and Transparent
 

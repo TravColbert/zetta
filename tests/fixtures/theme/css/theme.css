@@ -1,0 +1,4 @@
+/* Only in the fixture theme, so a hit proves the theme's css/ is being served. */
+.fixture-article {
+  color: rebeccapurple;
+}

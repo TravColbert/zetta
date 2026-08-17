@@ -1,5 +1,6 @@
-import { getVisibleArticles, getAllTags } from "../../articles.js";
-import { escapeHtml } from "../../utils.js";
+import { getVisibleArticles, getAllTags } from "../../lib/articles.js";
+import { escapeHtml } from "../../lib/utils.js";
+import { chatWidgetTag } from "../../lib/ai.js";
 
 export function renderLayout({ slug, title, keywords, description, body }) {
   const descTag = description
@@ -12,7 +13,7 @@ export function renderLayout({ slug, title, keywords, description, body }) {
   const articleLinks = articles
     .map((a) => {
       const active = a.slug === slug ? ' class="active"' : "";
-      return `      <li><a href="/articles/${a.slug}"${active}>${escapeHtml(a.metadata.title ?? 'TITLE NOT SET')}</a></li>`;
+      return `      <li><a href="/articles/${a.slug}"${active}>${escapeHtml(a.metadata.title ?? "TITLE NOT SET")}</a></li>`;
     })
     .join("\n");
 
@@ -30,8 +31,10 @@ export function renderLayout({ slug, title, keywords, description, body }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="keywords" content="${escapeHtml(keywords)}">${descTag}
   <title>${escapeHtml(title)} — Zetta</title>
-  <link rel="stylesheet" href="/css/zetta.css">
-  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 </head>
 <body>
   <header class="site-header">
@@ -57,6 +60,7 @@ ${tagLinks}
       ${body}
     </main>
   </div>
+  ${chatWidgetTag()}
 </body>
 </html>`;
 }
