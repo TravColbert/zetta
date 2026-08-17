@@ -80,10 +80,10 @@ to the smallest snippet that answers the question.`,
       tool: "get_ai_guide",
       slug: "4-ai",
       description:
-        "Call this then the visitor asks how to implement AI features in their " +
-        "Zetta installation - implementing the chat widget, building the AI knowledge " +
-        "base, RAG or other AI capabilities into their blog. Returns the ai guide " +
-        "in full.",
+        "Call this when the visitor asks how to set up or configure the AI " +
+        "assistant on their own Zetta site — the API key, articles/ai.js, the " +
+        "system prompt, tools, the chat widget, or its limits. Returns the AI " +
+        "guide in full.",
     },
     {
       tool: "get_about_zetta",

@@ -24,6 +24,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 Second, create \`articles/ai.js\`. Without both, \`/api/chat\` returns 503 and no widget is rendered — a stock Zetta install is just a blog.
 
+The assistant calls \`claude-sonnet-5\`, which balances answer quality against how long a visitor waits. Set \`ANTHROPIC_MODEL\` to use a different model: \`claude-opus-5\` is stronger and slower. \`claude-haiku-4-5\` is the exception — it rejects the effort setting Zetta sends, so pointing the assistant at Haiku makes every request fail.
+
 ## The configuration file
 
 \`articles/ai.js\` is a CommonJS module, like an article, but it is never published as one:
@@ -78,8 +80,10 @@ If an entry names an article you have not published, or a file that is not there
 
 You do not need to list every article. Two tools are always present:
 
-- \`search_articles\` — matches a query against titles, tags, blurbs, and body text, and returns titles and summaries
+- \`search_articles\` — matches a query against titles, tags, blurbs, and body text, and returns the best eight matches as titles and summaries
 - \`read_article\` — returns one article in full, by slug
+
+Both reach every article Zetta has loaded, including \`hidden: true\` ones. Hiding an article keeps it out of your listings; it does not keep it away from the assistant.
 
 Between them the assistant can answer from anything you publish. Curated tools in \`tools\` are for the handful of documents you want it to reach for by name, without searching first.
 
@@ -132,6 +136,14 @@ This matters more than it first appears. Your articles repository is pulled auto
 {"level":"error","msg":"failed to load ai config, chat disabled","error":"systemPrompt must be a non-empty string"}
 \`\`\`
 
+A missing file is the quieter case, logged once at startup:
+
+\`\`\`json
+{"level":"info","msg":"no ai config, chat disabled","path":"/app/articles/ai.js"}
+\`\`\`
+
+A missing \`ANTHROPIC_API_KEY\` is quieter still — nothing is logged for it. If the widget is absent and neither line above is in your log, check the key first.
+
 ## Changes take effect on sync
 
 \`ai.js\` is re-read whenever your articles sync, on the polling interval or from a webhook. Editing your prompt, adding a tool, or publishing an article that a tool points at all take effect without a restart.
@@ -159,6 +171,8 @@ A few limits are fixed, and are there to keep a single visitor from running up y
 | Conversation length | 40 messages |
 | Requests per minute, per address | 12 |
 | Tool calls per answer | 6 |
+| Search results per query | 8 |
+| Tokens per answer, thinking included | 4,096 |
 
 The last one is worth knowing about when you design tools. An answer that searches, then reads an article, has already used two rounds. If you find the assistant giving up, it is usually chaining too many lookups — which a better-targeted curated tool will fix.
 `,

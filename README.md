@@ -41,9 +41,10 @@ module.exports = {
   metadata: {
     title: "My Article Title",
     author: "Your Name",
-    publishedAt: "2024-01-15T00:00:00Z", // required — determines sort order
+    publishedAt: "2024-01-15T00:00:00Z", // required — no date, no article
     tags: ["tag1", "tag2"], // optional
     blurb: "Short summary shown in listing", // optional
+    order: 1, // optional — sort position, lowest first
     hidden: false, // optional — set true to hide from listing
   },
   content: `Your **Markdown** content here.`,
@@ -51,8 +52,10 @@ module.exports = {
 ```
 
 - Files prefixed with `!` (e.g. `!_new_article_template.js`) are ignored by the loader.
+- `ai.js` is the chat configuration, not an article, and is never loaded as one.
 - Articles without a valid `publishedAt` date are skipped.
-- Hidden articles (`hidden: true`) are excluded from the listing and the `/` redirect, but are still accessible by direct URL.
+- Order is `order` ascending — absent means `0` — then `publishedAt` descending within the same `order`. That decides the sidebar, the listings, and the `/` redirect.
+- Hidden articles (`hidden: true`) are excluded from the listings and the `/` redirect, but are still served on their own URL and are still reachable by the assistant's `search_articles` and `read_article` tools.
 
 ## Themes
 
@@ -133,12 +136,13 @@ The article and listing pages are assembled from the partial files below. Each i
 | `article-list.html`       | Article list page wrapper                             | `{{items}}`                                                                  |
 | `article-list-item.html`  | Each row in the article list                          | `{{slug}}`, `{{title}}`, `{{date}}`, `{{blurb}}`, `{{tags}}`                 |
 | `tag-list.html`           | Tag listing page wrapper                              | `{{items}}`                                                                  |
-| `tag-list-item.html`      | Each tag link in the tag listing                      | `{{tag}}`, `{{url}}`                                                         |
-| `listing.html`            | Listing page wrapper (tag-filtered view)              | `{{tag_cloud}}`, `{{clear_filter}}`, `{{items}}`                             |
-| `listing-item.html`       | Each row in the filtered listing                      | `{{slug}}`, `{{title}}`, `{{date}}`, `{{blurb}}`                             |
-| `listing-item-blurb.html` | Blurb paragraph (omitted when no blurb)               | `{{blurb}}`                                                                  |
-| `tag-cloud-item.html`     | Each tag in the tag cloud on listing pages            | `{{tag}}`, `{{url}}`, `{{active_class}}`                                     |
-| `clear-filter.html`       | "Clear filter" link (shown when tag filter is active) | _(none)_                                                                     |
+| `tag-list-item.html`      | Each tag link, in the tag listing and on list rows    | `{{tag}}`, `{{url}}`                                                         |
+| `listing-item-blurb.html` | Blurb paragraph in a list row (omitted when no blurb) | `{{blurb}}`                                                                  |
+| `404.html` / `500.html`   | Error page bodies, wrapped in the layout              | _(none)_                                                                     |
+
+`/articles?tag=name` is rendered with the same `article-list.html` and `article-list-item.html` as the unfiltered listing.
+
+`templates/default/partials/` also holds four files no renderer reads: `listing.html`, `listing-item.html`, `tag-cloud-item.html` and `clear-filter.html`, left from an earlier tag-filtered view, plus `head.html`, which only a `layout.html` sitting in `templates/default/` itself could resolve. Overriding any of them in a theme has no effect.
 
 ## Chat Assistant
 
@@ -182,8 +186,15 @@ Completed actions are logged and POSTed to `RESERVATION_WEBHOOK_URL` if set;
 nothing is stored by Zetta itself.
 
 `articles/ai.js` is never loaded as an article. If it is missing, throws, or has
-no `systemPrompt`, the chat is disabled and the error is logged — a bad commit in
+no `systemPrompt`, the chat is disabled and the reason is logged — a bad commit in
 your articles repo cannot take the blog down. It is re-read on every git sync.
+A missing `ANTHROPIC_API_KEY` disables the chat without logging anything.
+
+Fixed limits, enforced in `lib/guards.js`, `lib/chat.js` and `lib/tools.js`: 2,000
+characters per message, 40 messages per conversation, 12 requests per minute per
+address, 6 tool rounds per answer, 8 results per search, 4,096 output tokens per
+answer. That last figure is `max_tokens`, which the model's thinking and its
+reply text share — it is not a reply-length limit.
 
 The widget is injected by the layout. The built-in layout does this for you;
 a custom HTML layout places it with `{{chatWidget}}`, which renders the script
@@ -205,7 +216,7 @@ tag when chat is on and nothing when it is off.
 | `SYNC_INTERVAL`         | `300`    | Polling interval in seconds for git sync                                                                                                  |
 | `WEBHOOK_SECRET`        | _(none)_ | Shared secret for webhook validation                                                                                                      |
 | `ANTHROPIC_API_KEY`     | _(none)_ | Enables the chat assistant. Without it there is no widget and `/api/chat` answers 503                                                     |
-| `ANTHROPIC_MODEL`       | `claude-opus-5` | Model the assistant calls                                                                                                          |
+| `ANTHROPIC_MODEL`       | `claude-sonnet-5` | Model the assistant calls. `claude-opus-5` is stronger and slower; `claude-haiku-4-5` rejects the `effort` value sent in every request and will 400 |
 | `RESERVATION_WEBHOOK_URL` | _(none)_ | Where completed booking and message actions are POSTed. Signed with `WEBHOOK_SECRET` when one is set                                    |
 | `ARTICLES_DIR`          | `articles/` | Absolute path to render articles from. Only the tests set this                                                                          |
 | `TEMPLATE_DIR`          | _(none)_ | Absolute path to a theme directory, taking precedence over `CUSTOM_THEME`. Only the tests set this                                        |
@@ -260,20 +271,20 @@ zetta/
 │   │   ├── js/
 │   │   │   └── widget.js              # Chat widget
 │   │   └── partials/
-│   │       ├── head.html              # Shared <head> fragment
 │   │       ├── article.html           # Article page structure
 │   │       ├── article-tag.html       # Tag link on article page
 │   │       ├── article-list.html      # Article list page structure
 │   │       ├── article-list-item.html # Article list row
 │   │       ├── tag-list.html          # Tag listing structure
 │   │       ├── tag-list-item.html     # Tag link in the tag listing
-│   │       ├── listing.html           # Listing page structure (tag-filtered view)
-│   │       ├── listing-item.html      # Listing row
-│   │       ├── listing-item-blurb.html # Blurb paragraph
-│   │       ├── tag-cloud-item.html    # Tag cloud link
-│   │       ├── clear-filter.html      # Clear filter link
+│   │       ├── listing-item-blurb.html # Blurb paragraph in a list row
 │   │       ├── 404.html               # Built-in 404 page
-│   │       └── 500.html               # Built-in 500 page
+│   │       ├── 500.html               # Built-in 500 page
+│   │       ├── head.html              # Unread — see "Content partials"
+│   │       ├── listing.html           # Unread — left from an earlier listing view
+│   │       ├── listing-item.html      # Unread
+│   │       ├── tag-cloud-item.html    # Unread
+│   │       └── clear-filter.html      # Unread
 │   └── <CUSTOM_THEME>/            # The site's own theme (gitignored — its own repo)
 ├── lib/                # Application modules
 │   ├── config.js           # Paths and env-derived settings
